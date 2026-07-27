@@ -60,7 +60,7 @@ st.caption(
 )
 
 
-# --- YAPAY ZEKA MOTORU (Yeni Google GenAI SDK) ---
+# --- YAPAY ZEKA MOTORU (DİNAMİK MODEL BULUCU) ---
 def metin_soyak_ai_cevap(user_query):
     if "GEMINI_API_KEY" not in st.secrets or not st.secrets["GEMINI_API_KEY"]:
         return "⚠️ HATA: Streamlit Secrets alanında 'GEMINI_API_KEY' bulunamadı!"
@@ -82,23 +82,28 @@ def metin_soyak_ai_cevap(user_query):
     """
 
     try:
-        # Yeni SDK Client Yapılandırması
         client = genai.Client(api_key=api_key)
 
-        # Yeni API model çağrısı
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=system_prompt,
-        )
+        # Hesabında aktif olan tüm modelleri otomatik çekiyoruz
+        available_models = [m.name for m in client.models.list()]
 
-        if response and response.text:
-            return response.text
-        else:
-            return "API yanıt verdi ancak metin boş döndü."
+        # generateContent destekleyen ilk aktif modeli bulup kullanıyoruz
+        for model_info in available_models:
+            # model ismi "models/gemini-xxx" formatında gelebilir, ismini temizliyoruz
+            model_name = model_info.replace("models/", "")
+            try:
+                response = client.models.generate_content(
+                    model=model_name, contents=system_prompt
+                )
+                if response and response.text:
+                    return response.text
+            except Exception:
+                continue
+
+        return "⚠️ Mevcut API Key'inize tanımlı çalışan bir yapay zeka modeli bulunamadı. Lütfen Google AI Studio üzerinden API Key'inizi yenileyin."
 
     except Exception as e:
-        error_details = traceback.format_exc()
-        return f"🚨 TEKNİK DETAYLI HATA:\n{str(e)}\n\n{error_details[:200]}"
+        return f"🚨 API BAĞLANTI HATASI: {str(e)}"
 
 
 # GİRDİ ALANI
