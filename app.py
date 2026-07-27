@@ -6,7 +6,7 @@ from google import genai
 import streamlit as st
 import streamlit.components.v1 as components
 
-# 1. Sayfa Ayarları
+# Sayfa Ayarları
 st.set_page_config(
     page_title="Metin Soyak - Yapay Zeka Yanıt Merkezi",
     page_icon="👔",
@@ -14,30 +14,38 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# 2. Kalıcı Arşiv
+# Ses Kaydedici Modülü Korumalı İçe Aktarma
+try:
+    from streamlit_mic_recorder import speech_to_text
+
+    MIC_AVAILABLE = True
+except ImportError:
+    MIC_AVAILABLE = False
+
+# Kalıcı Hafıza
 if "story_archive" not in st.session_state:
     st.session_state["story_archive"] = []
+if "is_speaking" not in st.session_state:
+    st.session_state["is_speaking"] = False
 
-# 3. Görsel / GIF Yükleyici (Base64 ile Kırık Görsel Önleme)
-def get_avatar_html():
-    files = os.listdir(".")
-    # Klasördeki GIF veya Görseli otomatik bul
-    media_file = next(
-        (f for f in files if f.endswith((".gif", ".jpeg", ".jpg", ".png"))), None
-    )
+# Dosya Yolları
+STATIC_IMG = "IMG_7535.jpeg"
+TALKING_GIF = "hailuo-2_3_A_52-year-old_Turkish_senior_bureaucrat_talking_subtle_lip_movement_and_head_mot-0-ezgif.com-gif-maker.gif"
 
-    if media_file:
-        try:
-            with open(media_file, "rb") as f:
-                data = f.read()
-                b64 = base64.b64encode(data).decode("utf-8")
-                mime = "image/gif" if media_file.endswith(".gif") else "image/jpeg"
-                return f'<img src="data:{mime};base64,{b64}" style="width:140px; height:140px; border-radius:50%; object-fit:cover; border:3px solid #2c3e50; box-shadow:0 4px 10px rgba(0,0,0,0.15);">'
-        except Exception:
-            pass
-    return '<div style="font-size:60px;">👔</div>'
 
-# CSS
+# Base64 Görsel Yükleyici (Kırık Resim/GIF Engelleme)
+def load_image_as_b64(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, "rb") as f:
+            data = f.read()
+            return base64.b64encode(data).decode("utf-8")
+    return None
+
+
+static_b64 = load_image_as_b64(STATIC_IMG)
+gif_b64 = load_image_as_b64(TALKING_GIF)
+
+# CSS Tasarımı
 st.markdown(
     """
     <style>
@@ -49,29 +57,22 @@ st.markdown(
     }
     .answer-box {
         background-color: #ffffff; border-left: 5px solid #2c3e50;
-        padding: 20px; border-radius: 12px; font-size: 15px;
+        padding: 20px; border-radius: 12px; font-size: 16px;
         color: #1c1c1e; line-height: 1.8; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        margin-bottom: 15px;
+        margin-bottom: 15px; font-weight: 500;
+    }
+    .avatar-frame {
+        width: 140px; height: 140px; border-radius: 50%;
+        object-fit: cover; border: 3px solid #2c3e50;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
     }
     </style>
 """,
     unsafe_allow_html=True,
 )
 
-# Profil
-st.markdown('<div class="profile-container">', unsafe_allow_html=True)
-st.markdown(get_avatar_html(), unsafe_allow_html=True)
-st.markdown(
-    """
-    <div style="font-size:20px; font-weight:700; color:#1c1c1e; margin-top:8px;">Metin SOYAK (52)</div>
-    <div style="font-size:13px; color:#8e8e93; font-weight:600;">Müdiriyet Kıdemli Başyazarı & Evrak Uzmanı</div>
-    """,
-    unsafe_allow_html=True,
-)
-st.caption("💬 *'Sorunuz ne olursa olsun; doğru ve gerçek yanıtı verir, kendi üslubumla ve sıfır hatayla açıklarım!'*")
 
-
-# --- YAPAY ZEKA MOTORU ---
+# YAPAY ZEKA MOTORU
 def metin_soyak_ai_cevap(user_query):
     if "GEMINI_API_KEY" not in st.secrets or not st.secrets["GEMINI_API_KEY"]:
         return "⚠️ HATA: Streamlit Secrets alanında 'GEMINI_API_KEY' bulunamadı!"
@@ -93,7 +94,7 @@ def metin_soyak_ai_cevap(user_query):
     ÇOK ÖNEMLİ KISITLAMALAR:
     1. KISA VE ÖZ OL: Cevabın TOPLAMDA MAXIMUM 2 VEYA 3 KISA CÜMLE olsun. Asla uzun paragraflar yazma!
     2. DOĞRU CEVAP: Soruya doğru ve net cevabı ver.
-    3. HAFİF ALAKASIZ BÜROKRATİK TEPKİ: Cevabın bir yerine şu cümleyi veya benzeri komik bir bürokratik detayı ekle: "{chosen_distraction}"
+    3. HAFİF ALAKASIZ BÜROKRATİK TEPKİ: Cevabın bir yerine şu cümleyi ekle: "{chosen_distraction}"
     4. TON: Aşırı kendinden emin, "Sıfır Hata" diyen, resmi ama renkli bir üslup.
 
     Kullanıcının Sorduğu Soru: "{user_query}"
@@ -120,82 +121,90 @@ def metin_soyak_ai_cevap(user_query):
         return f"🚨 HATA: {str(e)}"
 
 
-# --- MİKROFON İLE SES DİNLEME ---
-st.markdown("### 🎙️ Sesli Soru Sorun")
+# AVATAR VE PROFİL BÖLÜMÜ
+st.markdown('<div class="profile-container">', unsafe_allow_html=True)
 
-st_voice_html = """
-    <script>
-    function startDictation() {
-        if (window.hasOwnProperty('webkitSpeechRecognition') || window.hasOwnProperty('SpeechRecognition')) {
-            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            var recognition = new SpeechRecognition();
+# Konuşma durumuna göre GIF veya Durağan Resim Basımı
+if st.session_state["is_speaking"] and gif_b64:
+    img_src = f"data:image/gif;base64,{gif_b64}"
+elif static_b64:
+    img_src = f"data:image/jpeg;base64,{static_b64}"
+else:
+    img_src = "https://img.icons8.com/color/96/user-male-circle--v1.png"
 
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.lang = "tr-TR";
-            
-            var btn = document.getElementById('mic-btn');
-            btn.innerHTML = "🔴 Dinleniyor... Konuşun!";
-            btn.style.background = "#e74c3c";
+st.markdown(
+    f"""
+    <div style="display:flex; justify-content:center; align-items:center;">
+        <img src="{img_src}" class="avatar-frame">
+    </div>
+""",
+    unsafe_allow_html=True,
+)
 
-            recognition.start();
+st.markdown(
+    """
+    <div style="font-size:20px; font-weight:700; color:#1c1c1e; margin-top:8px;">Metin SOYAK (52)</div>
+    <div style="font-size:13px; color:#8e8e93; font-weight:600;">Müdiriyet Kıdemli Başyazarı & Evrak Uzmanı</div>
+    """,
+    unsafe_allow_html=True,
+)
+st.caption(
+    "💬 *'Sorunuz ne olursa olsun; doğru ve gerçek yanıtı verir, kendi üslubumla ve sıfır hatayla açıklarım!'*"
+)
+st.markdown("</div>", unsafe_allow_html=True)
 
-            recognition.onresult = function(e) {
-                var transcript = e.results[0][0].transcript;
-                recognition.stop();
-                btn.innerHTML = "🎤 MİKROFONA BASIP SORU SOR";
-                btn.style.background = "#2c3e50";
 
-                // Metni panoya kopyalar ve kullanıcıya kolaylık sağlar
-                navigator.clipboard.writeText(transcript);
-                alert("Sesiniz algılandı: '" + transcript + "'\n\nMetin kutusuna yapıştırıp cevap alabilirsiniz!");
-            };
+# SORU ALMA BÖLÜMÜ (YAZILI VEYA GERÇEK MİKROFON)
+st.subheader("🎙️ Sorunuzu İletin")
 
-            recognition.onerror = function(e) {
-                recognition.stop();
-                btn.innerHTML = "🎤 MİKROFONA BASIP SORU SOR";
-                btn.style.background = "#2c3e50";
-                alert("Ses algılanamadı veya izin verilmedi.");
-            };
-        } else {
-            alert("Tarayıcınız ses tanımayı desteklemiyor.");
-        }
-    }
-    </script>
-    <button id="mic-btn" onclick="startDictation()" 
-    style="width:100%; background:#2c3e50; color:white; border:none; padding:14px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:15px; margin-bottom:10px;">
-    🎤 MİKROFONA BASIP SORU SOR
-    </button>
-"""
-components.html(st_voice_html, height=60)
+voice_text = ""
+if MIC_AVAILABLE:
+    # Mobil ve Safari Uyumlu Doğrudan Mikrofon Kaydedici
+    voice_text = speech_to_text(
+        language="tr",
+        start_prompt="🎤 Mikrofona Basıp Konuşun",
+        stop_prompt="⏹️ Kaydı Bitir ve Sor",
+        just_once=True,
+        key="STT",
+    )
 
-# GİRDİ ALANI
 user_prompt = st.text_area(
-    "📝 Metin Soyak'a Bir Soru Sorun:",
-    placeholder="Sorunuzu yazın veya mikrofona konuşup buraya ekleyin...",
+    "📝 Veya Sorunuzu Yazın:",
+    value=voice_text if voice_text else "",
+    placeholder="Mikrofon kaydı bittiğinde veya buraya yazıp butona bastığınızda Metin Bey cevaplayacaktır...",
     height=80,
 )
 
-# CEVAP BUTONU
-if st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True):
-    if not user_prompt.strip():
+# SORUYU İŞLEME BUTONU VEYA OTOMATİK SES TETİKLEME
+final_query = voice_text if voice_text else user_prompt.strip()
+
+if st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True) or (
+    voice_text and "last_voice" not in st.session_state
+):
+    if voice_text:
+        st.session_state["last_voice"] = voice_text
+
+    if not final_query:
         st.warning("⚠️ Lütfen Metin Bey'e bir soru iletin!")
     else:
         with st.spinner("Metin Bey mevzuatı ve hakikati inceliyor..."):
-            answer_result = metin_soyak_ai_cevap(user_prompt)
+            answer_result = metin_soyak_ai_cevap(final_query)
             time_stamp = datetime.now().strftime("%H:%M:%S")
 
             st.session_state["story_archive"].insert(
                 0,
                 {
                     "time": time_stamp,
-                    "prompt": user_prompt.strip(),
+                    "prompt": final_query,
                     "answer": answer_result,
                 },
             )
+            # Cevap geldiğinde avatarı konuşma (GIF) moduna geçir
+            st.session_state["is_speaking"] = True
             st.rerun()
 
-# --- CEVAP VE SESLİ OKUMA ---
+
+# CEVAP VE KONUŞAN AVATAR SESLENDİRME BÖLÜMÜ
 if len(st.session_state["story_archive"]) > 0:
     latest = st.session_state["story_archive"][0]
 
@@ -212,28 +221,37 @@ if len(st.session_state["story_archive"]) > 0:
         .replace("\n", " ")
     )
 
+    # Sesli Okuma Butonu
     sync_tts_script = f"""
         <script>
-        function speakText() {{
+        function speakMetin() {{
             if ('speechSynthesis' in window) {{
                 window.speechSynthesis.cancel();
                 var text = "{clean_text}";
                 var msg = new SpeechSynthesisUtterance(text);
                 msg.lang = 'tr-TR';
-                msg.rate = 0.95;
+                msg.rate = 0.92;
                 window.speechSynthesis.speak(msg);
             }}
         }}
-        setTimeout(speakText, 300);
         </script>
-        <button onclick="speakText()" 
-        style="width:100%; background:#2c3e50; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:15px;">
-        🔊 CEVABI TEKRAR SESLİ DİNLE
+        <button onclick="speakMetin()" 
+        style="width:100%; background:#2c3e50; color:white; border:none; padding:14px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:16px;">
+        🗣️ METİN BEY'İ CANLI DİNLE (AVATAR KONUŞUYOR)
         </button>
     """
-    components.html(sync_tts_script, height=60)
+    components.html(sync_tts_script, height=65)
 
-# --- ARŞİV ---
+    # Konuşma bittiğinde durağan fotoğrafa dönme butonu
+    if st.session_state["is_speaking"]:
+        if st.button(
+            "⏹️ Konuşmayı Bitir (Durağan Fotoğrafa Dön)",
+            use_container_width=True,
+        ):
+            st.session_state["is_speaking"] = False
+            st.rerun()
+
+# GEÇMİŞ ARŞİV
 if len(st.session_state["story_archive"]) > 0:
     st.divider()
     st.subheader(
@@ -242,31 +260,5 @@ if len(st.session_state["story_archive"]) > 0:
 
     for idx, item in enumerate(st.session_state["story_archive"]):
         expander_title = f"🕒 {item['time']} - Soru: \"{item['prompt'][:40]}\""
-
         with st.expander(expander_title, expanded=(idx == 0)):
             st.write(item["answer"])
-
-            arch_text = (
-                item["answer"]
-                .replace("'", "\\'")
-                .replace('"', '\\"')
-                .replace("\n", " ")
-            )
-            arch_tts = f"""
-                <script>
-                function speakArch_{idx}() {{
-                    if ('speechSynthesis' in window) {{
-                        window.speechSynthesis.cancel();
-                        var msg = new SpeechSynthesisUtterance("{arch_text}");
-                        msg.lang = 'tr-TR';
-                        msg.rate = 0.95;
-                        window.speechSynthesis.speak(msg);
-                    }}
-                }}
-                </script>
-                <button onclick="speakArch_{idx}()" 
-                style="width:100%; background:#8e8e93; color:white; border:none; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:13px; margin-top:5px;">
-                🔊 Bu Cevabı Sesli Dinle
-                </button>
-            """
-            components.html(arch_tts, height=50)
