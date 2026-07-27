@@ -84,18 +84,25 @@ def metin_soyak_ai_cevap(user_query):
     Kullanıcının Sorduğu Soru: "{user_query}"
     """
 
-    # Model adları için otomatik yedekli kontrol (1.5-flash-latest veya gemini-pro)
-    try:
-        try:
-            model = genai.GenerativeModel("gemini-1.5-flash-latest")
-            response = model.generate_content(system_prompt)
-        except Exception:
-            model = genai.GenerativeModel("gemini-pro")
-            response = model.generate_content(system_prompt)
+    # Olası tüm Gemini model isimlerini sırayla dener
+    candidate_models = [
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-1.0-pro",
+        "models/gemini-1.5-flash",
+        "models/gemini-pro",
+    ]
 
-        return response.text
-    except Exception as e:
-        return f"Mevzuat incelemesi sırasında teknik bir aksaklık oluştu: {str(e)}"
+    for model_name in candidate_models:
+        try:
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(system_prompt)
+            if response and response.text:
+                return response.text
+        except Exception:
+            continue
+
+    return "Mevzuat incelemesi sırasında teknik bir aksaklık oluştu: Lütfen Streamlit Secrets alanındaki API Key'inizi (GEMINI_API_KEY) kontrol edin veya yeni bir API Key oluşturun."
 
 
 # GİRDİ ALANI
