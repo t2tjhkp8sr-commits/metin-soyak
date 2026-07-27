@@ -5,13 +5,13 @@ import streamlit.components.v1 as components
 
 # 1. Sayfa Ayarları
 st.set_page_config(
-    page_title="Metin Soyak - Sıfır Hata Yaratım Merkezi",
+    page_title="Metin Soyak - Sıfır Hata Yanıt Merkezi",
     page_icon="👔",
     layout="centered",
     initial_sidebar_state="collapsed",
 )
 
-# 2. KALICI HAFIZA (Sayfa Yenilense De Silinmez)
+# 2. Kalıcı Arşiv Hafızası (Soru & Cevaplar Sayfada Kalır)
 if "story_archive" not in st.session_state:
     st.session_state["story_archive"] = []
 
@@ -25,7 +25,7 @@ st.markdown(
         border: 1px solid #d1d1d6; box-shadow: 0 4px 12px rgba(0,0,0,0.06);
         text-align: center; margin-bottom: 20px;
     }
-    .story-box {
+    .answer-box {
         background-color: #ffffff; border-left: 5px solid #2c3e50;
         padding: 20px; border-radius: 12px; font-size: 15px;
         color: #1c1c1e; line-height: 1.8; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
@@ -55,59 +55,54 @@ st.markdown(
 )
 
 st.caption(
-    "💬 *'Ne sorarsanız sorun; fıkhi, mantıki ve idari gerçeği söyler, sıfır hatayla rapora bağlarım!'*"
+    "💬 *'Aklınıza takılanı sorun; fıkhi, idari veya genel hakikati en doğru ve eksiksiz şekilde açıklayayım!'*"
 )
 
-# --- DİNAMİK VE GERÇEKÇİ CEVAP MOTORU ---
+# --- FARKLI MEKAN / MOD VE ÜSLUP ŞABLONLARI ---
 
-ZAMAN_VE_MEKAN = [
-    "Pazartesi sabahı saat tam 08:45'te müdiriyetin çay ocağı önünde evrak sırasındayken",
-    "Bizzat başkanlık ettiğim 'Evrak Arşivinde İmla Standartları' toplantısının ortasında",
-    "Öğle molasına beş dakika kala, masamdaki 1998 yılına ait karar defterini incelerken",
-    "Yıllık izne ayrılacak memurun zimmet teslim tutanağını kontrol ettiğim esnada",
-]
-
-TEPKILER = [
-    "Odadakiler ne yapacağını bilemeyip paniğe kapılırken, ben 'Sıfır Hata Metin' soğukkanlılığıyla çayımdan bir yudum aldım. İnsanlar böylesine hususlarda hemen telaş yapar ama usule ve hakikate hakim olan adam çizgisini bozmaz.",
-    "Genç memurlar sorunun karmaşıklığı karşısında dehşete düşmüştü. Kendilerine dönüp tam 20 dakika boyunca 'Mevzuat ve Mantık Hiyerarşisi' üzerine mini bir konferans verdim. Arkamdan 'Yine lafı uzattı' dediler ama durumun ciddiyetini kavrayan tek kişi bendim.",
-]
-
-SONUCLAR = [
-    "Netice itibarıyla kararı ve resmi gerekçeyi rapora bağlayıp altına mühürlü kaşemi bastım. Varsın arkamdan 'Çok konuştu' desinler... Günün sonunda hem soru tam cevaplandı hem de evrakta sıfır hata sağlandı! Dosyayı kaldırıp çayımı tazeledim.",
-    "Sonuç olarak kriz çözüldü, hakikat ve nizami cevap kayda geçti. Üzerine 'Görüldü, İnceledi ve Onaylandı - Metin SOYAK' yazıp parafımı attım. Mühür basıldı, konu kapandı.",
+DURUM_VE_ORTAMLAR = [
+    "Dün akşam mahalle kıraathanesinde arkadaşlarla otururken bu konu açıldı. Ben de cebimden kalemimi çıkarıp olayın özünü şöyle izah ettim:",
+    "Gerek 30 yıllık hayat tecrübem gerekse incelediğim yüzlerce mevzuat doğrultusunda bu meseleye son noktayı koyuyorum:",
+    "Bana bu soruyu geçen gün berber koltuğundayken de sordular. Şöyle arkama yaslandım ve aynen şunları söyledim:",
+    "Meseleyi ne çok karmaşıklaştıracaksınız ne de yüzeysel geçeceksiniz. Hakikat ve doğru usul gayet nettir:",
+    "Pazar günü evde haberleri izlerken tam da bu husus tartışılıyordu. Hanıma 'Bak yine işin aslını bilmeden konuşuyorlar' deyip doğrusunu aktardım:",
 ]
 
 
-def cevap_ve_hikaye_uret(user_query):
+def gercekci_absurt_cevap(user_query):
     query_lower = user_query.lower().strip()
 
-    # Akıllı/Gerçekçi Mantık Çıkarımı (Soru Türüne Göre Gerçekçi Yanıt Üretme)
+    # Sorunun konusunu tespit edip mantıklı + hafif absürt-detaycı cevabı hazırlama
     if "migros" in query_lower or "market" in query_lower:
-        cevap = "Yapılan inceleme neticesinde: Alınan gıda veya maddeler helal, tayyib ve hukuka uygun olduğu sürece alışveriş yapmak tamamen CAİZDİR. Ancak alkol, domuz ürünü veya haram maddelerin alımı elbette caiz değildir. Ticaretin yapıldığı mekandan ziyade sepete koyduğunuz ürünün mahiyeti esastır."
+        ozet_cevap = "Sorunuzun net cevabı: Alınan gıda veya ürün helal ve meşru olduğu sürece Migros veya başka bir marketten alışveriş yapmak tamamen CAİZDİR. İster süpermarket olsun ister mahalle bakkalı; önemli olan satılan ürünün mahiyetidir. Alkol veya haram gıda almadığınız müddetçe ticarette hiçbir sakınca yoktur."
     elif "borsa" in query_lower or "hisse" in query_lower:
-        cevap = "Mevzuat ve fıkıh tetkiki sonucunda: Faaliyet alanı dinen helal olan, kumar ve spekülasyondan uzak şirketlerin hisselerini alıp satmak CAİZDİR. Ancak faizli, haram işler yapan şirketlerin hisseleri caiz değildir."
+        ozet_cevap = "İşin doğrusu şudur: Faaliyet alanı dinen helal olan, faize ve kumara bulaşmayan şirketlerin hissesini alıp satmak CAİZDİR. Ancak faizle iş yapan veya haram sektörlerde bulunan şirketlerin hissesi caiz değildir. Borsa bir kumar yeri değil, ortaklık mekanizmasıdır."
     elif "uzay" in query_lower or "uzaylı" in query_lower:
-        cevap = "Fiziksel ve idari veriler ışığında: Evrenin büyüklüğü göz önüne alındığında başka yaşam formlarının bulunma ihtimali bilimsel olarak tartışılabilir; ancak mevcut resmi evrak ve kayıtlarda henüz onaylanmış bir temas bulunmamaktadır."
+        ozet_cevap = "Bu konudaki bilimsel ve mantıki gerçek: Evrenin büyüklüğü göz önüne alındığında başka yaşam ihtimalleri teorik olarak mümkündür; fakat elimizde veya resmi belgelerde onaylanmış tek bir somut uzaylı kanıtı yoktur. İspatlanmamış varsayımlarla hareket edilmez."
     elif "çay" in query_lower or "kahve" in query_lower:
-        cevap = "İdari ve insani standartlar gereği: Mesai saatleri içerisinde çay/kahve molası verimliliği artırmak kaydıyla haktır; ancak işlerin aksamasına sebep olacak derecede uzun molalar usulsüzdür ve kamu zararına girer."
+        ozet_cevap = "İşin aslı ve mantığı: Gün içinde çay veya kahve içmek insani bir ihtiyaçtır ve verimliliği artırır. Fakat abartıp işi gücü aksatacak boyuta getirmek hakkınız olmayan zamanı harcamak olur. Dengeli tüketildiği sürece helal ve haktır."
     else:
-        # Genel sorular için mantıklı ve resmi cevap kurgusu
-        cevap = f"Masama gelen '{user_query}' hususuyla ilgili yaptığım incelemede: Meselenin esası, genel mantık kurallarına, kamu düzenine ve temel ahlak/fıkıh ilkelerine uygun hareket edilmesidir. Usulüne ve mevzuatına uygun atılan her adım meşru ve geçerlidir."
+        ozet_cevap = f"'{user_query}' hususundaki hakikat şudur: Mantığa, ahlaka, genel hukuk ilkelerine ve usule uygun olan her adım geçerlidir. Doğru bilgiye dayanarak hareket ettiğiniz sürece hiçbir problem yaşamazsınız."
 
-    # Hikayeyi Birleştirme
-    zaman = random.choice(ZAMAN_VE_MEKAN)
-    tepki = random.choice(TEPKILER)
-    sonuc = random.choice(SONUCLAR)
+    # Rastgele Farklı Bir Durum / Giriş Seçimi
+    durum = random.choice(DURUM_VE_ORTAMLAR)
 
-    full_text = f"{zaman} masama doğrudan şu soru geldi: '{user_query}'. {tepki} Resmî incelemem neticesinde varılan net cevap şudur: {cevap} {sonuc}"
-    return full_text
+    # Bitiş Cümleleri
+    bitis = random.choice([
+        "Varsın arkamdan 'Yine lafı uzattı' desinler, ben bilginin ve usulün doğrusunu söylerim. Konu kapanmıştır!",
+        "İşin hem mantığı hem gerçeği budur. Sıfır hata prensibiyle cevabı verdik, artık gönül rahatlığıyla hareket edebilirsiniz.",
+        "Noktası virgülüne kadar doğru cevap budur. Kim ne derse desin işin aslı değişmez!",
+    ])
+
+    full_response = f"{durum}\n\n👉 {ozet_cevap}\n\n{bitis}"
+    return full_response
 
 
 # GİRDİ ALANI
 user_prompt = st.text_area(
-    "📝 Metin Soyak'a Soru Sorun veya Konu Anlatın (Maksimum 50 kelime):",
+    "📝 Metin Soyak'a Bir Soru Sorun (Maksimum 50 kelime):",
     value="Migrostan alışveriş caiz mi?",
-    placeholder="Örn: Borsa oynamak caiz mi? / Ofiste uzaylı belirse ne yaparsın?",
+    placeholder="Örn: Borsa oynamak caiz mi? / Kripto para yatırımı mantıklı mı?",
     height=90,
 )
 
@@ -115,54 +110,51 @@ words = user_prompt.strip().split()
 word_count = len(words)
 st.caption(f"📊 Kelime Sayısı: **{word_count} / 50**")
 
-# HİKAYE VE CEVAP ÜRETME BUTONU
-if st.button("✍️ CEVAPLA VE HİKAYELEŞTİR", use_container_width=True):
+# CEVAPLAMA BUTONU
+if st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True):
     if not user_prompt.strip():
-        st.warning("⚠️ Lütfen Metin Bey'e bir soru veya konu iletin!")
+        st.warning("⚠️ Lütfen Metin Bey'e bir soru iletin!")
     elif word_count > 50:
-        st.error("⚠️ Lütfen soru 50 kelimeden az olsun!")
+        st.error("⚠️ Lütfen sorunuz 50 kelimeden az olsun!")
     else:
-        # Yanıtı ve Hikayeyi Üret
-        story_result = cevap_ve_hikaye_uret(user_prompt)
+        # Cevabı Oluştur
+        answer_result = gercekci_absurt_cevap(user_prompt)
         time_stamp = datetime.now().strftime("%H:%M:%S")
 
-        # KALICI ARŞİVE EKLE (En yeni en üste)
+        # KALICI ARŞİVE EKLE (En yeni yanıt en üste gelir)
         st.session_state["story_archive"].insert(
             0,
             {
                 "time": time_stamp,
                 "prompt": user_prompt.strip(),
-                "story": story_result,
+                "answer": answer_result,
             },
         )
 
-# --- EKRANDA EN SON ÜRETİLEN CEVAP VE HİKAYE ---
+# --- EKRANDA EN SON VERİLEN CEVAP VE SESLENDİRME ---
 if len(st.session_state["story_archive"]) > 0:
     latest = st.session_state["story_archive"][0]
 
-    st.markdown("### 📜 Onaylanan Son Rapordaki Cevap")
+    st.markdown("### 💬 Metin Soyak'ın Cevabı")
     st.markdown(
-        f'<div class="story-box">{latest["story"]}</div>',
+        f'<div class="answer-box">{latest["answer"]}</div>',
         unsafe_allow_html=True,
     )
 
-    clean_text_js = latest["story"].replace("'", "\\'").replace('"', '\\"')
+    clean_text_js = latest["answer"].replace("'", "\\'").replace('"', '\\"').replace("\n", " ")
     tts_html = f"""
         <button onclick="window.speechSynthesis.cancel(); var msg = new SpeechSynthesisUtterance('{clean_text_js}'); msg.lang='tr-TR'; msg.rate=0.95; window.speechSynthesis.speak(msg);" 
         style="width:100%; background:#2c3e50; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:15px;">
-        🔊 SESLİ DİNLE
+        🔊 CEVABI SESLİ DİNLE
         </button>
     """
     components.html(tts_html, height=55)
 
-# --- TÜM GEÇMİŞ CEVAPLAR / HİKAYELER ARŞİVİ (SAYFADA KALAN LİSTE) ---
+# --- TÜM GEÇMİŞ SORULAR VE CEVAPLAR ARŞİVİ ---
 if len(st.session_state["story_archive"]) > 0:
     st.divider()
     st.subheader(
-        f"📚 Tüm Sorular ve Cevaplar Arşivi ({len(st.session_state['story_archive'])} Kayıt)"
-    )
-    st.caption(
-        "Aşağıdaki listeden daha önce sorduğunuz tüm soruları görebilir, tıklayıp okuyabilir veya tekrar dinleyebilirsiniz:"
+        f"📚 Soru ve Cevap Geçmişi ({len(st.session_state['story_archive'])} Kayıt)"
     )
 
     for idx, item in enumerate(st.session_state["story_archive"]):
@@ -171,10 +163,10 @@ if len(st.session_state["story_archive"]) > 0:
         )
 
         with st.expander(expander_title):
-            st.write(item["story"])
+            st.write(item["answer"])
 
             arch_text_js = (
-                item["story"].replace("'", "\\'").replace('"', '\\"')
+                item["answer"].replace("'", "\\'").replace('"', '\\"').replace("\n", " ")
             )
             arch_tts = f"""
                 <button onclick="window.speechSynthesis.cancel(); var msg = new SpeechSynthesisUtterance('{arch_text_js}'); msg.lang='tr-TR'; msg.rate=0.95; window.speechSynthesis.speak(msg);" 
@@ -185,8 +177,8 @@ if len(st.session_state["story_archive"]) > 0:
             components.html(arch_tts, height=45)
 
             st.download_button(
-                label="📥 Metin Dosyası Olarak İndir (.txt)",
-                data=item["story"],
+                label="📥 Cevabı İndir (.txt)",
+                data=item["answer"],
                 file_name=f"metin_soyak_cevap_{item['time'].replace(':','-')}.txt",
                 mime="text/plain",
                 key=f"dl_{idx}_{item['time']}",
