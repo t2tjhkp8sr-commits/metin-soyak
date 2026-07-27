@@ -1,7 +1,6 @@
-from io import BytesIO
 import random
-from gTTS import gTTS
 import streamlit as st
+import streamlit.components.v1 as components
 
 # Safari ve Mobil Ekran Ayarları
 st.set_page_config(
@@ -123,7 +122,7 @@ raw_input = st.text_input(
     placeholder="Örn: evrak, zimmet, teftiş",
 )
 
-if st.button("✍️ HİKAYE ÜRET VE SESLENDİR", use_container_width=True):
+if st.button("✍️ HİKAYE ÜRET", use_container_width=True):
     words = [w.strip().lower() for w in raw_input.split(",") if w.strip()]
 
     if not words:
@@ -141,7 +140,7 @@ if st.button("✍️ HİKAYE ÜRET VE SESLENDİR", use_container_width=True):
             gelisme_temp = random.choice(GELISMELER)
             story.append(gelisme_temp.format(kw=word))
 
-        # 3. Çözüm ve Sonuç
+        # 3. Çözüm ve Sonucz
         last_kw = words[-1] if len(words) > 2 else words[0]
         cozum_temp = random.choice(COZUM_SONUC)
         story.append(cozum_temp.format(kw=last_kw))
@@ -158,9 +157,32 @@ if st.button("✍️ HİKAYE ÜRET VE SESLENDİR", use_container_width=True):
             unsafe_allow_html=True,
         )
 
-        # SES OLUŞTURMA (gTTS)
-        with st.spinner("🔊 Metin Soyak seslendiriyor..."):
-            tts = gTTS(text=full_text, lang="tr")
-            sound_file = BytesIO()
-            tts.write_to_fp(sound_file)
-            st.audio(sound_file, format="audio/mp3")
+        # YEREL TARAYICI İLE SESLENDİRME (Safari Web Speech API)
+        clean_text = full_text.replace("'", "\\'").replace('"', '\\"')
+        tts_html = f"""
+            <div style="text-align: center; margin-top: 10px;">
+                <button onclick="speakText()" style="
+                    background-color: #2c3e50; 
+                    color: white; 
+                    border: none; 
+                    padding: 12px 20px; 
+                    border-radius: 10px; 
+                    font-size: 15px; 
+                    font-weight: bold;
+                    width: 100%;
+                    cursor: pointer;">
+                    🔊 METİN SOYAK'TAN SESLİ DİNLE
+                </button>
+            </div>
+
+            <script>
+            function speakText() {{
+                window.speechSynthesis.cancel();
+                var msg = new SpeechSynthesisUtterance('{clean_text}');
+                msg.lang = 'tr-TR';
+                msg.rate = 0.95;
+                window.speechSynthesis.speak(msg);
+            }}
+            </script>
+        """
+        components.html(tts_html, height=70)
