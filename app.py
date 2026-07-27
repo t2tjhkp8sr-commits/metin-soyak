@@ -6,7 +6,6 @@ from datetime import datetime
 import edge_tts
 from google import genai
 import streamlit as st
-import streamlit.components.v1 as components
 
 # 1. Sayfa Ayarları
 st.set_page_config(
@@ -133,7 +132,7 @@ if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 65vh;
+            height: 60vh;
             text-align: center;
         }
         .full-avatar-img {
@@ -172,26 +171,20 @@ if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 
         unsafe_allow_html=True,
     )
 
-    # Otomatik Ses Tetikleyici JS Scripti
+    # Doğrudan HTML5 Autoplay Ses Öğesi
     audio_b64 = latest.get("audio_b64")
     if audio_b64:
-        # Gizli bir HTML5 Audio ve Otomatik Çalma Scripti
-        autoplay_script = f"""
-            <audio id="metinAudio" autoplay style="display:none;">
-                <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
-            </audio>
-            <script>
-                var audio = document.getElementById("metinAudio");
-                if (audio) {{
-                    audio.play().catch(function(error) {{
-                        console.log("Autoplay hatası:", error);
-                    }});
-                }}
-            </script>
-        """
-        components.html(autoplay_script, height=0)
+        st.markdown(
+            f"""
+            <div style="text-align: center; margin-bottom: 20px;">
+                <audio autoplay controls style="width: 80%; max-width: 400px;">
+                    <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
+                </audio>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    st.write("<br>", unsafe_allow_html=True)
     if st.button("⏹️ Ana Ekrana Dön", use_container_width=True):
         st.session_state["is_speaking"] = False
         st.rerun()
