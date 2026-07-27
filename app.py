@@ -1,3 +1,4 @@
+import base64
 import os
 import random
 from datetime import datetime
@@ -13,25 +14,30 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# 2. Görsel / GIF Dosyalarını Dinamik Bulma (Kırık Görsel Önleyici)
-def get_avatar_path():
-    files = os.listdir(".")
-    gif_file = next((f for f in files if f.endswith(".gif")), None)
-    jpg_file = next((f for f in files if f.endswith((".jpeg", ".jpg", ".png"))), None)
-    
-    if gif_file:
-        return gif_file
-    elif jpg_file:
-        return jpg_file
-    return None
-
-AVATAR_PATH = get_avatar_path()
-
-# 3. Kalıcı Arşiv Hafızası
+# 2. Kalıcı Arşiv
 if "story_archive" not in st.session_state:
     st.session_state["story_archive"] = []
 
-# 4. CSS Tasarım
+# 3. Görsel / GIF Yükleyici (Base64 ile Kırık Görsel Önleme)
+def get_avatar_html():
+    files = os.listdir(".")
+    # Klasördeki GIF veya Görseli otomatik bul
+    media_file = next(
+        (f for f in files if f.endswith((".gif", ".jpeg", ".jpg", ".png"))), None
+    )
+
+    if media_file:
+        try:
+            with open(media_file, "rb") as f:
+                data = f.read()
+                b64 = base64.b64encode(data).decode("utf-8")
+                mime = "image/gif" if media_file.endswith(".gif") else "image/jpeg"
+                return f'<img src="data:{mime};base64,{b64}" style="width:140px; height:140px; border-radius:50%; object-fit:cover; border:3px solid #2c3e50; box-shadow:0 4px 10px rgba(0,0,0,0.15);">'
+        except Exception:
+            pass
+    return '<div style="font-size:60px;">👔</div>'
+
+# CSS
 st.markdown(
     """
     <style>
@@ -52,14 +58,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Profil Bölümü
+# Profil
 st.markdown('<div class="profile-container">', unsafe_allow_html=True)
-
-if AVATAR_PATH:
-    st.image(AVATAR_PATH, width=140)
-else:
-    st.write("👔")
-
+st.markdown(get_avatar_html(), unsafe_allow_html=True)
 st.markdown(
     """
     <div style="font-size:20px; font-weight:700; color:#1c1c1e; margin-top:8px;">Metin SOYAK (52)</div>
@@ -67,10 +68,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
-st.caption(
-    "💬 *'Sorunuz ne olursa olsun; doğru ve gerçek yanıtı verir, kendi üslubumla ve sıfır hatayla açıklarım!'*"
-)
+st.caption("💬 *'Sorunuz ne olursa olsun; doğru ve gerçek yanıtı verir, kendi üslubumla ve sıfır hatayla açıklarım!'*")
 
 
 # --- YAPAY ZEKA MOTORU ---
@@ -122,7 +120,7 @@ def metin_soyak_ai_cevap(user_query):
         return f"🚨 HATA: {str(e)}"
 
 
-# --- MİKROFON İLE SESLİ SORU (KİLİTLENMEYEN SAF MİKROFON) ---
+# --- MİKROFON İLE SES DİNLEME ---
 st.markdown("### 🎙️ Sesli Soru Sorun")
 
 st_voice_html = """
@@ -137,7 +135,7 @@ st_voice_html = """
             recognition.lang = "tr-TR";
             
             var btn = document.getElementById('mic-btn');
-            btn.innerHTML = "🔴 Dinleniyor...";
+            btn.innerHTML = "🔴 Dinleniyor... Konuşun!";
             btn.style.background = "#e74c3c";
 
             recognition.start();
@@ -148,12 +146,9 @@ st_voice_html = """
                 btn.innerHTML = "🎤 MİKROFONA BASIP SORU SOR";
                 btn.style.background = "#2c3e50";
 
-                var doc = window.parent.document;
-                var textarea = doc.querySelector('textarea');
-                if (textarea) {
-                    textarea.value = transcript;
-                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                }
+                // Metni panoya kopyalar ve kullanıcıya kolaylık sağlar
+                navigator.clipboard.writeText(transcript);
+                alert("Sesiniz algılandı: '" + transcript + "'\n\nMetin kutusuna yapıştırıp cevap alabilirsiniz!");
             };
 
             recognition.onerror = function(e) {
@@ -176,21 +171,15 @@ components.html(st_voice_html, height=60)
 
 # GİRDİ ALANI
 user_prompt = st.text_area(
-    "📝 Metin Soyak'a Bir Soru Sorun (Maksimum 50 kelime):",
-    value="",
-    placeholder="Mikrofona basıp konuştuğunuzda sesiniz buraya dolacaktır...",
+    "📝 Metin Soyak'a Bir Soru Sorun:",
+    placeholder="Sorunuzu yazın veya mikrofona konuşup buraya ekleyin...",
     height=80,
 )
 
-words = user_prompt.strip().split()
-word_count = len(words) if user_prompt.strip() else 0
-
-# CEVAPLAMA BUTONU
+# CEVAP BUTONU
 if st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True):
     if not user_prompt.strip():
         st.warning("⚠️ Lütfen Metin Bey'e bir soru iletin!")
-    elif word_count > 50:
-        st.error("⚠️ Lütfen sorunuz 50 kelimeden az olsun!")
     else:
         with st.spinner("Metin Bey mevzuatı ve hakikati inceliyor..."):
             answer_result = metin_soyak_ai_cevap(user_prompt)
@@ -204,6 +193,7 @@ if st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True):
                     "answer": answer_result,
                 },
             )
+            st.rerun()
 
 # --- CEVAP VE SESLİ OKUMA ---
 if len(st.session_state["story_archive"]) > 0:
@@ -280,11 +270,3 @@ if len(st.session_state["story_archive"]) > 0:
                 </button>
             """
             components.html(arch_tts, height=50)
-
-            st.download_button(
-                label="📥 Cevabı İndir (.txt)",
-                data=item["answer"],
-                file_name=f"metin_soyak_cevap_{item['time'].replace(':','-')}.txt",
-                mime="text/plain",
-                key=f"dl_{idx}_{item['time']}",
-            )
