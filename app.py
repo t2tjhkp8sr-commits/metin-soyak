@@ -1,10 +1,10 @@
+import asyncio
 import base64
-import io
 import os
 import random
 from datetime import datetime
+import edge_tts
 from google import genai
-from gtts import gTTS
 import streamlit as st
 
 # 1. Sayfa Ayarları
@@ -18,6 +18,7 @@ st.set_page_config(
 # Ses Kaydedici Bileşeni
 try:
     from streamlit_mic_recorder import speech_to_text
+
     MIC_AVAILABLE = True
 except ImportError:
     MIC_AVAILABLE = False
@@ -34,25 +35,40 @@ if "last_processed_voice" not in st.session_state:
 STATIC_IMG = "IMG_7535.jpeg"
 TALKING_GIF = "hailuo-2_3_A_52-year-old_Turkish_senior_bureaucrat_talking_subtle_lip_movement_and_head_mot-0-ezgif.com-gif-maker.gif"
 
+
 def get_image_b64(file_path):
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
             return base64.b64encode(f.read()).decode("utf-8")
     return None
 
+
 static_b64 = get_image_b64(STATIC_IMG)
 gif_b64 = get_image_b64(TALKING_GIF)
 
-# Metni MP3 Ses Dosyasına (Base64) Dönüştüren Fonksiyon
+
+# Tok Erkek Sesi (tr-TR-AhmetNeural) Oluşturma Fonksiyonu
+async def generate_male_audio(text):
+    # 'tr-TR-AhmetNeural' derin, tok ve olgun bir Türkçe erkek sesidir.
+    voice = "tr-TR-AhmetNeural"
+    communicate = edge_tts.Communicate(text, voice)
+    output_path = "temp_response.mp3"
+    await communicate.save(output_path)
+
+    if os.path.exists(output_path):
+        with open(output_path, "rb") as f:
+            b64_data = base64.b64encode(f.read()).decode("utf-8")
+        os.remove(output_path)
+        return b64_data
+    return None
+
+
 def text_to_audio_b64(text):
     try:
-        tts = gTTS(text=text, lang="tr", slow=False)
-        fp = io.BytesIO()
-        tts.write_to_fp(fp)
-        fp.seek(0)
-        return base64.b64encode(fp.read()).decode("utf-8")
+        return asyncio.run(generate_male_audio(text))
     except Exception:
         return None
+
 
 # 2. Yapay Zeka Motoru
 def metin_soyak_ai_cevap(user_query):
@@ -106,8 +122,7 @@ def metin_soyak_ai_cevap(user_query):
 # --- TAM EKRAN AVATAR MODU ---
 if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 0:
     latest = st.session_state["story_archive"][0]
-    
-    # Bütün varsayılan Streamlit arayüzünü gizleyen CSS
+
     st.markdown(
         """
         <style>
@@ -118,7 +133,7 @@ if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 70vh;
+            height: 65vh;
             text-align: center;
         }
         .full-avatar-img {
@@ -141,7 +156,11 @@ if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 
         unsafe_allow_html=True,
     )
 
-    img_src = f"data:image/gif;base64,{gif_b64}" if gif_b64 else "https://img.icons8.com/color/96/user-male-circle--v1.png"
+    img_src = (
+        f"data:image/gif;base64,{gif_b64}"
+        if gif_b64
+        else "https://img.icons8.com/color/96/user-male-circle--v1.png"
+    )
 
     st.markdown(
         f"""
@@ -153,13 +172,14 @@ if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 
         unsafe_allow_html=True,
     )
 
-    # HTML5 Ses Çalar (Autoplay + Controls)
+    # Ses Oynatıcı
     audio_b64 = latest.get("audio_b64")
     if audio_b64:
         st.markdown(
             f"""
-            <div style="text-align: center; margin-bottom: 20px;">
-                <audio autoplay controls style="width: 80%; max-width: 400px;">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <p style="color: #bbb; font-size: 14px; margin-bottom: 8px;">🔊 Yanıtı dinlemek için oynat butonuna basın:</p>
+                <audio controls autoplay style="width: 80%; max-width: 400px;">
                     <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
                     Tarayıcınız ses çalmayı desteklemiyor.
                 </audio>
@@ -168,7 +188,6 @@ if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 
             unsafe_allow_html=True,
         )
 
-    # Konuşmayı Bitirip Normal Ekran Dönüş Butonu
     if st.button("⏹️ Ana Ekrana Dön", use_container_width=True):
         st.session_state["is_speaking"] = False
         st.rerun()
@@ -202,7 +221,11 @@ else:
         unsafe_allow_html=True,
     )
 
-    img_src = f"data:image/jpeg;base64,{static_b64}" if static_b64 else "https://img.icons8.com/color/96/user-male-circle--v1.png"
+    img_src = (
+        f"data:image/jpeg;base64,{static_b64}"
+        if static_b64
+        else "https://img.icons8.com/color/96/user-male-circle--v1.png"
+    )
 
     st.markdown(
         f"""
@@ -243,14 +266,18 @@ else:
         query_to_send = voice_input
         st.session_state["last_processed_voice"] = voice_input
 
-    button_clicked = st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True)
+    button_clicked = st.button(
+        "✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True
+    )
 
     if button_clicked and text_input.strip():
         should_process = True
         query_to_send = text_input.strip()
 
     if should_process:
-        with st.spinner("Metin Bey cevabı hazırlıyor ve seslendiriyor..."):
+        with st.spinner(
+            "Metin Bey cevabı hazırlıyor ve tok bir sesle seslendiriyor..."
+        ):
             answer_text = metin_soyak_ai_cevap(query_to_send)
             audio_b64 = text_to_audio_b64(answer_text)
             time_str = datetime.now().strftime("%H:%M:%S")
@@ -264,7 +291,6 @@ else:
                     "audio_b64": audio_b64,
                 },
             )
-            # Tam ekran avatar moduna geç
             st.session_state["is_speaking"] = True
             st.rerun()
 
