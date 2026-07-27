@@ -84,25 +84,33 @@ def metin_soyak_ai_cevap(user_query):
     Kullanıcının Sorduğu Soru: "{user_query}"
     """
 
-    # Olası tüm Gemini model isimlerini sırayla dener
-    candidate_models = [
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "gemini-1.0-pro",
-        "models/gemini-1.5-flash",
-        "models/gemini-pro",
-    ]
+    # Hesabınıza açık olan aktif modelleri dinamik sorgula
+    try:
+        available_models = [
+            m.name
+            for m in genai.list_models()
+            if "generateContent" in m.supported_generation_methods
+        ]
+        
+        # Aktif model varsa ilkini veya en uygununu seç
+        selected_model = None
+        for m in available_models:
+            if "flash" in m or "pro" in m:
+                selected_model = m
+                break
+        
+        if not selected_model and available_models:
+            selected_model = available_models[0]
 
-    for model_name in candidate_models:
-        try:
-            model = genai.GenerativeModel(model_name)
+        if selected_model:
+            model = genai.GenerativeModel(selected_model)
             response = model.generate_content(system_prompt)
-            if response and response.text:
-                return response.text
-        except Exception:
-            continue
-
-    return "Mevzuat incelemesi sırasında teknik bir aksaklık oluştu: Lütfen Streamlit Secrets alanındaki API Key'inizi (GEMINI_API_KEY) kontrol edin veya yeni bir API Key oluşturun."
+            return response.text
+        else:
+            return "Mevzuat incelemesi hatası: Hesabınızda kullanılabilir aktif bir Gemini modeli bulunamadı."
+            
+    except Exception as e:
+        return f"Mevzuat incelemesi sırasında teknik bir aksaklık oluştu: {str(e)}"
 
 
 # GİRDİ ALANI
