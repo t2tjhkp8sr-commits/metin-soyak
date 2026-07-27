@@ -5,17 +5,17 @@ import streamlit.components.v1 as components
 
 # 1. Sayfa Ayarları
 st.set_page_config(
-    page_title="Metin Soyak - Bürokrasi Motoru",
+    page_title="Metin Soyak - Sıfır Hata Yaratım Merkezi",
     page_icon="👔",
     layout="centered",
     initial_sidebar_state="collapsed",
 )
 
-# 2. Arşiv Hafızası (Session State)
-if "history" not in st.session_state:
-    st.session_state["history"] = []
+# 2. Kalıcı Arşiv Hafızası (Session State)
+if "story_archive" not in st.session_state:
+    st.session_state["story_archive"] = []
 
-# 3. iOS Özel Tasarım
+# 3. iOS ve Safari Uyumlu Özel Tasarım
 st.markdown(
     """
     <style>
@@ -27,9 +27,13 @@ st.markdown(
     }
     .story-box {
         background-color: #ffffff; border-left: 5px solid #2c3e50;
-        padding: 18px; border-radius: 12px; font-size: 15px;
-        color: #1c1c1e; line-height: 1.7; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        padding: 20px; border-radius: 12px; font-size: 15px;
+        color: #1c1c1e; line-height: 1.8; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         margin-bottom: 15px;
+    }
+    .archive-card {
+        background-color: #ffffff; border-radius: 10px; padding: 12px;
+        margin-bottom: 10px; border: 1px solid #e5e5ea;
     }
     </style>
 """,
@@ -48,99 +52,151 @@ except Exception:
 
 st.markdown(
     """
-    <div style="font-size:20px; font-weight:700;">Metin SOYAK (52)</div>
-    <div style="font-size:13px; color:#8e8e93;">Müdiriyet Kıdemli Başyazarı</div>
-    </div>
-""",
+    <div style="font-size:20px; font-weight:700; color:#1c1c1e;">Metin SOYAK (52)</div>
+    <div style="font-size:13px; color:#8e8e93; font-weight:600;">Müdiriyet Kıdemli Başyazarı & Evrak Uzmanı</div>
+    """,
     unsafe_allow_html=True,
 )
 
 st.caption(
-    "💬 *'Siz mevzuyu anlatın, ben resmi usul ve sıfır hata prensibiyle hikayesini kaleme alayım!'*"
+    "💬 *'Ne anlatırsanız anlatın; usulüne uygun, mantık silsilesi kusursuz ve sıfır hatalı bir hikayeye dönüştürürüm!'*"
 )
 
-# Hikaye Motoru Kalıpları
-GIRISLER = [
-    "Saat tam 09:15'te masama oturduğumda, önüme gelen notta yazanlar aynen şöyleydi: '{user_topic}'. Odadakiler şaşkındı ama ben soğukkanlılığımı korudum.",
-    "Bizzat kaleme aldığım 48 sayfalık disiplin raporunu incelerken gündeme gelen konu şuydu: '{user_topic}'. Bürokrasiye aykırı bir durum olup olmadığını hemen incelemeye başladım.",
-    "Etraftakiler 'Yine çok laf az iş yapacak' diye fısıldaşıyordu ama mevzu '{user_topic}' olunca ipleri elime almam şart oldu.",
+# --- GELİŞMİŞ VE DEĞİŞKEN HİKAYE MOTORU ---
+
+ZAMAN_VE_MEKAN = [
+    "Pazartesi sabahı saat tam 08:45'te müdiriyetin çay ocağı önünde evrak sırasındayken",
+    "Bizzat başkanlık ettiğim 'Evrak Arşivinde İmla Standartları' toplantısının ortasında",
+    "Öğle molasına beş dakika kala, masamdaki 1998 yılına ait karar defterini incelerken",
+    "Yıllık izne ayrılacak memurun zimmet teslim tutanağını kontrol ettiğim esnada",
+    "Aşağı kattaki evrak kayıt odasından gelen garip gürültüleri tahkik etmek üzere merdivenlerden inerken",
 ]
 
-GELISMELER = [
-    "Hemen kırmızı kalemimi çıkarıp konunun detaylarını masaya yatırdım. Normal bir insan bunu sıradan sanabilirdi fakat mevzuat açısından tam bir usulsüzlük riski taşıyordu. Kendilerine 'Sakin olun, usule bakmadan adım atılmaz' diyerek uzun bir idari söylev verdim.",
-    "Kriz biraz daha büyüyünce odadaki memurlar panikle sağa sola kaçışmaya başladı. Oysa 'Sıfır Hata Metin' olarak ben yerimden bile kalkmadan olayın mantıksal ve hukuki altyapısını kuruyordum.",
+OLAY_GIRIS = [
+    "beklenmedik bir gelişme yaşandı ve {topic} konusu patlak verdi.",
+    "odaya giren bir memur nefes nefese kalmış bir halde bana {topic} hususunu iletti.",
+    "koridorda büyük bir panik dalgası yayıldı; herkes {topic} meselesini konuşuyordu.",
+    "önüme getirilen acil kodlu resmi yazıda aynen şu ifade geçiyordu: {topic}.",
 ]
 
-SONUCLAR = [
-    "Nihayetinde hiç istifimi bozmadan konuyu resmi prosedüre uygun biçimde ele aldım. Evrakta tek bir imla hatası bile bırakmadan çözümü sağladım. Varsın arkamdan yine çok konuştu desinler, günü sıfır hatayla kapattık.",
-    "Son hamle olarak meseleyi dairenin resmi standartlarına kavuşturdum. Ben işimi yazarım, çizerim, nizami hale getiririm. Kriz ne kadar absürt olursa olsun Metin Soyak masadaysa hata çıkmaz.",
+TEPKI_VE_ABSURDLUK = [
+    "Odadakiler ne yapacağını bilemeyip sağa sola koştururken, ben 'Sıfır Hata Metin' soğukkanlılığıyla çayımdan bir yudum aldım. İnsanlar böylesine absürt durumlarda hemen paniğe kapılır ama mevzuata hakim olan adam asla çizgisini bozmaz. Hemen kırmızı kalemimi çıkarıp olayın mantık hatalarını tespit ettim.",
+    "Genç memurlar krizin büyüklüğü karşısında dehşete düşmüştü. Kendilerine dönüp tam 20 dakika boyunca 'Bürokraside Kriz Yönetimi ve Sabır' konulu mini bir konferans verdim. Arkamdan 'Yine çok laf ediyor' diye fısıldaştılar ama durumun ciddiyetini kavrayan tek kişi bendim.",
+    "Bina amiri bile ne yapacağını şaşırmış, gözlerini bana dikmişti. 'Sakin olun evlatlar' dedim, 'Devletin evrakında ve düzeninde rastgeleliğe yer yoktur!' Masanın üzerindeki gözlüğümü takıp meselenin hukuki ve idari altyapısını çözmeye koyuldum.",
 ]
 
-# GİRDİ ALANI (50 Kelime Sınırlı Serbest Metin)
+ABSURT_COZUM = [
+    "Hemen 3 nüsha halinde özel bir beyanname kaleme aldım. İki nokta üst üste işaretlerinden virgüllerin dizilimine kadar tek bir imla hatasına izin vermeden süreci resmi sicile işledim. Absürt gibi görünen bu mesele, devlet ciddiyeti karşısında diz çöktü.",
+    "Olayı derhal 2026/04 sayılı iç genelgenin ek maddesine bağladım. Sayfa kenar boşluklarını milimetrik cetvelle ölçüp altına kırmızı mühürlü kaşemi bastım. Mesele öyle bir nizama girdi ki kimse tek bir itiraz bile edemedi.",
+    "Sonuç olarak, meselenin tüm detaylarını maddeler halinde arşiv dosyasında birleştirdim. Üzerine 'Görüldü ve İnceledi - Metin SOYAK' yazıp parafımı attım.",
+]
+
+SONUC_CUMLESI = [
+    "Varsın arkamdan 'Çok konuştu, işi uzattı' desinler... Günün sonunda ortada sıfır hata var mı? Var! Dosyayı kapağına kaldırıp çayımı tazeledim.",
+    "Netice itibarıyla kriz ne kadar büyük veya saçma olursa olsun, Metin Soyak masadaysa oradan sadece düzen çıkar. Mühür basıldı, konu kapandı.",
+]
+
+
+def hikaye_uret(user_input):
+    clean_topic = user_input.strip().rstrip(".")
+    zaman = random.choice(ZAMAN_VE_MEKAN)
+    giris = random.choice(OLAY_GIRIS).format(topic=f"'{clean_topic}'")
+    tepki = random.choice(TEPKI_VE_ABSURDLUK)
+    cozum = random.choice(ABSURT_COZUM)
+    sonuc = random.choice(SONUC_CUMLESI)
+
+    return f"{zaman} {giris} {tepki} {cozum} {sonuc}"
+
+
+# GİRDİ ALANI
 user_prompt = st.text_area(
-    "📝 Metin Soyak'a Ne Anlattırmak İstersin? (Maksimum 50 kelime):",
+    "📝 Metin Soyak'a Ne Anlattırmak İstersiniz? (Maksimum 50 kelime):",
     value="Ofiste uzaylı belirdi ve çay molasını uzatmak istedi.",
-    placeholder="Örn: Geç kalan memurlar için ejderha kiralama fikri ortaya atıldı...",
-    height=100,
+    placeholder="Örn: Evrak odasında ejderha çıktı...",
+    height=90,
 )
 
-# Kelime Sayısı Kontrolü
 words = user_prompt.strip().split()
 word_count = len(words)
-
 st.caption(f"📊 Kelime Sayısı: **{word_count} / 50**")
 
+# HİKAYE ÜRETME BUTONU
 if st.button("✍️ HİKAYE ÜRET", use_container_width=True):
     if not user_prompt.strip():
-        st.warning(
-            "⚠️ Metin Soyak'a bir konu anlatmadan tek bir paragraf bile kaleme almaz!"
-        )
+        st.warning("⚠️ Lütfen Metin Bey'e bir konu anlatın!")
     elif word_count > 50:
         st.error(
-            "⚠️ Lütfen konuyu en fazla 50 kelimeyle özetleyin! Metin Bey fazla uzun girdilerden hoşlanmaz."
+            "⚠️ Lütfen konuyu 50 kelimeden az yazın. Metin Bey gereksiz uzun girdileri sevmez!"
         )
     else:
-        # Hikaye Oluşturma
-        clean_input = user_prompt.strip()
-        story_part1 = random.choice(GIRISLER).format(user_topic=clean_input)
-        story_part2 = random.choice(GELISMELER)
-        story_part3 = random.choice(SONUCLAR)
+        # Yeni Hikaye Üret
+        new_story = hikaye_uret(user_prompt)
+        time_stamp = datetime.now().strftime("%H:%M:%S")
 
-        content = f"{story_part1} {story_part2} {story_part3}"
-
-        # Arşive Ekle
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        st.session_state["history"].append({"time": timestamp, "text": content})
-
-        # Hikaye Ekranı
-        st.markdown(
-            f'<div class="story-box">{content}</div>', unsafe_allow_html=True
+        # Hafızadaki Arşive Ekle (En yeni en üste gelecek şekilde)
+        st.session_state["story_archive"].insert(
+            0,
+            {
+                "time": time_stamp,
+                "prompt": user_prompt.strip(),
+                "story": new_story,
+            },
         )
 
-        # Seslendirme Butonu (Safari Web Speech API)
-        clean_text = content.replace("'", "\\'").replace('"', '\\"')
-        tts_html = f"""
-            <button onclick="window.speechSynthesis.speak(new SpeechSynthesisUtterance('{clean_text}'))" 
-            style="width:100%; background:#2c3e50; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer;">
-            🔊 SESLİ DİNLE
-            </button>
-        """
-        components.html(tts_html, height=60)
+# --- EKRANDA EN SON ÜRETİLEN HİKAYE VE SESLENDİRME ---
+if st.session_state["story_archive"]:
+    latest = st.session_state["story_archive"][0]
 
-# --- ARŞİV VE İNDİRME BÖLÜMÜ ---
-if st.session_state["history"]:
+    st.markdown("### 📜 Onaylanan Son Hikaye")
+    st.markdown(
+        f'<div class="story-box">{latest["story"]}</div>',
+        unsafe_allow_html=True,
+    )
+
+    # Seslendirme Butonu (Safari Web Speech API)
+    clean_text_js = latest["story"].replace("'", "\\'").replace('"', '\\"')
+    tts_html = f"""
+        <button onclick="window.speechSynthesis.cancel(); var msg = new SpeechSynthesisUtterance('{clean_text_js}'); msg.lang='tr-TR'; msg.rate=0.95; window.speechSynthesis.speak(msg);" 
+        style="width:100%; background:#2c3e50; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:15px;">
+        🔊 SESLİ DİNLE
+        </button>
+    """
+    components.html(tts_html, height=55)
+
+# --- GEÇMİŞ HİKAYELER ARŞİVİ (SAYFADA KALAN VE İSTEDİĞİN ZAMAN DİNLENEN) ---
+if len(st.session_state["story_archive"]) > 0:
     st.divider()
-    st.subheader("📜 Hikaye Arşivi")
+    st.subheader(
+        f"📚 Geçmiş Hikayeler Arşivi ({len(st.session_state['story_archive'])} Kayıt)"
+    )
+    st.caption("Aşağıdaki listeden eski hikayelerinize tıklayıp okuyabilir veya tekrar dinleyebilirsiniz:")
 
-    for idx, item in enumerate(reversed(st.session_state["history"])):
-        with st.expander(
-            f"🕒 {item['time']} - Kayıt #{len(st.session_state['history'])-idx}"
-        ):
-            st.write(item["text"])
+    for idx, item in enumerate(st.session_state["story_archive"]):
+        # Akordiyon Başlığı
+        expander_title = (
+            f"🕒 {item['time']} - Konu: \"{item['prompt'][:35]}...\""
+        )
+
+        with st.expander(expander_title):
+            st.write(item["story"])
+
+            # Arşivdeki Hikayeyi Sesli Dinleme Butonu
+            arch_text_js = (
+                item["story"].replace("'", "\\'").replace('"', '\\"')
+            )
+            arch_tts = f"""
+                <button onclick="window.speechSynthesis.cancel(); var msg = new SpeechSynthesisUtterance('{arch_text_js}'); msg.lang='tr-TR'; msg.rate=0.95; window.speechSynthesis.speak(msg);" 
+                style="width:100%; background:#8e8e93; color:white; border:none; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:13px; margin-top:5px;">
+                🔊 Bu Hikayeyi Sesli Dinle
+                </button>
+            """
+            components.html(arch_tts, height=45)
+
+            # İndirme Butonu
             st.download_button(
-                label="📥 Dosya Olarak İndir (.txt)",
-                data=item["text"],
-                file_name=f"metin_soyak_hikaye_{item['time']}.txt",
+                label="📥 Metin Dosyası Olarak İndir (.txt)",
+                data=item["story"],
+                file_name=f"metin_soyak_hikaye_{item['time'].replace(':','-')}.txt",
                 mime="text/plain",
-                key=f"dl_{idx}",
+                key=f"dl_{idx}_{item['time']}",
             )
