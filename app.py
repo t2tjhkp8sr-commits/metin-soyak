@@ -62,7 +62,6 @@ st.caption(
 
 # --- YAPAY ZEKA MOTORU ---
 def metin_soyak_ai_cevap(user_query):
-    # API Key Kontrolü
     if "GEMINI_API_KEY" not in st.secrets or not st.secrets["GEMINI_API_KEY"]:
         return "⚠️ HATA: Streamlit Secrets alanında 'GEMINI_API_KEY' bulunamadı!"
 
@@ -82,23 +81,21 @@ def metin_soyak_ai_cevap(user_query):
     Kullanıcının Sorduğu Soru: "{user_query}"
     """
 
-    try:
-        # API Yapılandırması
-        genai.configure(api_key=api_key)
+    genai.configure(api_key=api_key)
 
-        # Doğrudan en standart güncel model çağrısı
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(system_prompt)
+    # Güncel ve geçerli model isimleri
+    models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-8b"]
 
-        if response and response.text:
-            return response.text
-        else:
-            return "API yanıt verdi ancak metin boş döndü."
+    for model_name in models_to_try:
+        try:
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(system_prompt)
+            if response and response.text:
+                return response.text
+        except Exception:
+            continue
 
-    except Exception as e:
-        # Detaylı hata çıktısı alıyoruz
-        error_details = traceback.format_exc()
-        return f"🚨 TEKNİK DETAYLI HATA:\n{str(e)}\n\nDetay:\n{error_details[:300]}"
+    return "🚨 TEKNİK HATA: Tanımlanan tüm Gemini modelleri 404 döndü. Lütfen API key yetkilerinizi veya Google AI Studio hesabınızı kontrol edin."
 
 
 # GİRDİ ALANI
@@ -161,7 +158,7 @@ if len(st.session_state["story_archive"]) > 0:
 if len(st.session_state["story_archive"]) > 0:
     st.divider()
     st.subheader(
-        f"📚 Soru me Cevap Geçmişi ({len(st.session_state['story_archive'])} Kayıt)"
+        f"📚 Soru ve Cevap Geçmişi ({len(st.session_state['story_archive'])} Kayıt)"
     )
 
     for idx, item in enumerate(st.session_state["story_archive"]):
