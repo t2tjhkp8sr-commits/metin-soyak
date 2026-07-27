@@ -1,7 +1,6 @@
+import os
 import random
-import traceback
 from datetime import datetime
-
 from google import genai
 import streamlit as st
 import streamlit.components.v1 as components
@@ -14,15 +13,25 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Dosya Adları (Ana Dizindeki Dosyalarınız)
-STATIC_IMG = "IMG_7535.jpeg"
-TALKING_GIF = "hailuo-2_3_A_52-year-old_Turkish_senior_bureaucrat_talking_subtle_lip_movement_and_head_mot-0-ezgif.com-gif-maker.gif"
+# 2. Görsel / GIF Dosyalarını Dinamik Bulma (Kırık Görsel Önleyici)
+def get_avatar_path():
+    files = os.listdir(".")
+    gif_file = next((f for f in files if f.endswith(".gif")), None)
+    jpg_file = next((f for f in files if f.endswith((".jpeg", ".jpg", ".png"))), None)
+    
+    if gif_file:
+        return gif_file
+    elif jpg_file:
+        return jpg_file
+    return None
 
-# 2. Kalıcı Arşiv Hafızası
+AVATAR_PATH = get_avatar_path()
+
+# 3. Kalıcı Arşiv Hafızası
 if "story_archive" not in st.session_state:
     st.session_state["story_archive"] = []
 
-# 3. Tasarım
+# 4. CSS Tasarım
 st.markdown(
     """
     <style>
@@ -38,29 +47,18 @@ st.markdown(
         color: #1c1c1e; line-height: 1.8; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         margin-bottom: 15px;
     }
-    .avatar-frame {
-        width: 140px;
-        height: 140px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 3px solid #2c3e50;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    }
     </style>
 """,
     unsafe_allow_html=True,
 )
 
-# Profil Bölümü (Varsayılan Durağan Görsel)
+# Profil Bölümü
 st.markdown('<div class="profile-container">', unsafe_allow_html=True)
-st.markdown(
-    f"""
-    <div style="display:flex; justify-content:center; align-items:center;">
-        <img id="metin-avatar" src="{STATIC_IMG}" class="avatar-frame" onerror="this.onerror=null; this.src='https://img.icons8.com/color/96/user-male-circle--v1.png';">
-    </div>
-""",
-    unsafe_allow_html=True,
-)
+
+if AVATAR_PATH:
+    st.image(AVATAR_PATH, width=140)
+else:
+    st.write("👔")
 
 st.markdown(
     """
@@ -95,8 +93,8 @@ def metin_soyak_ai_cevap(user_query):
     Sen Metin SOYAK'sın. 52 yaşında, 30 yıllık kıdemli memur, evrak uzmanı ve başyazarsın.
     
     ÇOK ÖNEMLİ KISITLAMALAR:
-    1. KISA VE ÖZ OL: Cevabın TOPLAMDA MAXIMUM 5 VEYA 10 KISA CÜMLE olsun. Asla uzun paragraflar yazma!
-    2. DOĞRU CEVAP: Soruya doğru ve net cevabı ver arada absürt cevap ta ver.
+    1. KISA VE ÖZ OL: Cevabın TOPLAMDA MAXIMUM 2 VEYA 3 KISA CÜMLE olsun. Asla uzun paragraflar yazma!
+    2. DOĞRU CEVAP: Soruya doğru ve net cevabı ver.
     3. HAFİF ALAKASIZ BÜROKRATİK TEPKİ: Cevabın bir yerine şu cümleyi veya benzeri komik bir bürokratik detayı ekle: "{chosen_distraction}"
     4. TON: Aşırı kendinden emin, "Sıfır Hata" diyen, resmi ama renkli bir üslup.
 
@@ -124,7 +122,7 @@ def metin_soyak_ai_cevap(user_query):
         return f"🚨 HATA: {str(e)}"
 
 
-# --- MİKROFON İLE SESLİ SORU (YENİLENMİŞ OTOMATİK CEVAP SİSTEMİ) ---
+# --- MİKROFON İLE SESLİ SORU (KİLİTLENMEYEN SAF MİKROFON) ---
 st.markdown("### 🎙️ Sesli Soru Sorun")
 
 st_voice_html = """
@@ -139,7 +137,7 @@ st_voice_html = """
             recognition.lang = "tr-TR";
             
             var btn = document.getElementById('mic-btn');
-            btn.innerHTML = "🔴 Dinleniyor... Konuşun!";
+            btn.innerHTML = "🔴 Dinleniyor...";
             btn.style.background = "#e74c3c";
 
             recognition.start();
@@ -147,64 +145,47 @@ st_voice_html = """
             recognition.onresult = function(e) {
                 var transcript = e.results[0][0].transcript;
                 recognition.stop();
-                btn.innerHTML = "⏳ Cevap Hazırlanıyor...";
-                btn.style.background = "#f39c12";
+                btn.innerHTML = "🎤 MİKROFONA BASIP SORU SOR";
+                btn.style.background = "#2c3e50";
 
-                // URL parametresi ile Streamlit'i kesin olarak yeniden çalıştırıp soruyu iletir
-                var parentUrl = window.parent.location.pathname;
-                window.parent.location.href = parentUrl + '?q=' + encodeURIComponent(transcript);
+                var doc = window.parent.document;
+                var textarea = doc.querySelector('textarea');
+                if (textarea) {
+                    textarea.value = transcript;
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                }
             };
 
             recognition.onerror = function(e) {
                 recognition.stop();
                 btn.innerHTML = "🎤 MİKROFONA BASIP SORU SOR";
                 btn.style.background = "#2c3e50";
-                alert("Ses algılanamadı veya mikrofon izni verilmedi.");
+                alert("Ses algılanamadı veya izin verilmedi.");
             };
         } else {
-            alert("Tarayıcınız ses tanıma özelliğini desteklemiyor. Chrome veya Safari kullanın.");
+            alert("Tarayıcınız ses tanımayı desteklemiyor.");
         }
     }
     </script>
     <button id="mic-btn" onclick="startDictation()" 
     style="width:100%; background:#2c3e50; color:white; border:none; padding:14px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:15px; margin-bottom:10px;">
-    🎤 MİKROFONA BASIP SORU SOR (OTOMATİK CEVAPLAR)
+    🎤 MİKROFONA BASIP SORU SOR
     </button>
 """
 components.html(st_voice_html, height=60)
 
-# URL'den gelen otomatik sesli soruyu kontrol et
-query_params = st.query_params
-auto_prompt = query_params.get("q", "")
-
 # GİRDİ ALANI
 user_prompt = st.text_area(
     "📝 Metin Soyak'a Bir Soru Sorun (Maksimum 50 kelime):",
-    value=auto_prompt if auto_prompt else "",
-    placeholder="Mikrofona basıp konuştuğunuzda otomatik cevaplanacaktır...",
+    value="",
+    placeholder="Mikrofona basıp konuştuğunuzda sesiniz buraya dolacaktır...",
     height=80,
 )
 
 words = user_prompt.strip().split()
 word_count = len(words) if user_prompt.strip() else 0
 
-# URL parametresi geldiyse otomatik cevap üret ve parametreyi temizle
-if auto_prompt:
-    st.query_params.clear()
-    with st.spinner("Metin Bey mevzuatı ve hakikati inceliyor..."):
-        answer_result = metin_soyak_ai_cevap(auto_prompt)
-        time_stamp = datetime.now().strftime("%H:%M:%S")
-        st.session_state["story_archive"].insert(
-            0,
-            {
-                "time": time_stamp,
-                "prompt": auto_prompt.strip(),
-                "answer": answer_result,
-            },
-        )
-        st.rerun()
-
-# MANÜEL CEVAPLAMA BUTONU
+# CEVAPLAMA BUTONU
 if st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True):
     if not user_prompt.strip():
         st.warning("⚠️ Lütfen Metin Bey'e bir soru iletin!")
@@ -223,9 +204,8 @@ if st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True):
                     "answer": answer_result,
                 },
             )
-            st.rerun()
 
-# --- EKRANDA EN SON VERİLEN CEVAP, SESLENDİRME VE ANİMASYON SENKRONU ---
+# --- CEVAP VE SESLİ OKUMA ---
 if len(st.session_state["story_archive"]) > 0:
     latest = st.session_state["story_archive"][0]
 
@@ -242,55 +222,28 @@ if len(st.session_state["story_archive"]) > 0:
         .replace("\n", " ")
     )
 
-    # Otomatik Seslendirme + Avatar GIF Senkronizasyonu
     sync_tts_script = f"""
         <script>
-        function speakAndAnimate() {{
+        function speakText() {{
             if ('speechSynthesis' in window) {{
                 window.speechSynthesis.cancel();
                 var text = "{clean_text}";
                 var msg = new SpeechSynthesisUtterance(text);
                 msg.lang = 'tr-TR';
                 msg.rate = 0.95;
-
-                var doc = window.parent.document;
-                var avatar = doc.getElementById('metin-avatar');
-
-                // Konuşma Başladığında GIF'e Geç
-                msg.onstart = function() {{
-                    if (avatar) {{
-                        avatar.src = "{TALKING_GIF}";
-                    }}
-                }};
-
-                // Konuşma Bittiğinde Statik Fotoğrafa Dön
-                msg.onend = function() {{
-                    if (avatar) {{
-                        avatar.src = "{STATIC_IMG}";
-                    }}
-                }};
-
-                msg.onerror = function() {{
-                    if (avatar) {{
-                        avatar.src = "{STATIC_IMG}";
-                    }}
-                }};
-
                 window.speechSynthesis.speak(msg);
             }}
         }}
-
-        // Cevap geldiğinde otomatik çalıştır
-        setTimeout(speakAndAnimate, 300);
+        setTimeout(speakText, 300);
         </script>
-        <button onclick="speakAndAnimate()" 
+        <button onclick="speakText()" 
         style="width:100%; background:#2c3e50; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:15px;">
         🔊 CEVABI TEKRAR SESLİ DİNLE
         </button>
     """
     components.html(sync_tts_script, height=60)
 
-# --- TÜM GEÇMİŞ SORULAR VE CEVAPLAR ARŞİVİ ---
+# --- ARŞİV ---
 if len(st.session_state["story_archive"]) > 0:
     st.divider()
     st.subheader(
@@ -317,17 +270,6 @@ if len(st.session_state["story_archive"]) > 0:
                         var msg = new SpeechSynthesisUtterance("{arch_text}");
                         msg.lang = 'tr-TR';
                         msg.rate = 0.95;
-                        
-                        var doc = window.parent.document;
-                        var avatar = doc.getElementById('metin-avatar');
-
-                        msg.onstart = function() {{
-                            if (avatar) avatar.src = "{TALKING_GIF}";
-                        }};
-                        msg.onend = function() {{
-                            if (avatar) avatar.src = "{STATIC_IMG}";
-                        }};
-
                         window.speechSynthesis.speak(msg);
                     }}
                 }}
