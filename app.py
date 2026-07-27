@@ -1,10 +1,11 @@
 import base64
+import io
 import os
 import random
 from datetime import datetime
 from google import genai
+from gtts import gTTS
 import streamlit as st
-import streamlit.components.v1 as components
 
 # 1. Sayfa Ayarları
 st.set_page_config(
@@ -41,6 +42,17 @@ def get_image_b64(file_path):
 
 static_b64 = get_image_b64(STATIC_IMG)
 gif_b64 = get_image_b64(TALKING_GIF)
+
+# Metni MP3 Ses Dosyasına (Base64) Dönüştüren Fonksiyon
+def text_to_audio_b64(text):
+    try:
+        tts = gTTS(text=text, lang="tr", slow=False)
+        fp = io.BytesIO()
+        tts.write_to_fp(fp)
+        fp.seek(0)
+        return base64.b64encode(fp.read()).decode("utf-8")
+    except Exception:
+        return None
 
 # 2. Yapay Zeka Motoru
 def metin_soyak_ai_cevap(user_query):
@@ -91,16 +103,10 @@ def metin_soyak_ai_cevap(user_query):
         return f"HATA: {str(e)}"
 
 
-# --- EĞER METİN BEY KONUŞUYORSA: TAM EKRAN AVATAR MODU ---
+# --- TAM EKRAN AVATAR MODU ---
 if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 0:
     latest = st.session_state["story_archive"][0]
-    clean_answer = (
-        latest["answer"]
-        .replace("'", "\\'")
-        .replace('"', '\\"')
-        .replace("\n", " ")
-    )
-
+    
     # Bütün varsayılan Streamlit arayüzünü gizleyen CSS
     st.markdown(
         """
@@ -112,7 +118,7 @@ if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 80vh;
+            height: 70vh;
             text-align: center;
         }
         .full-avatar-img {
@@ -122,7 +128,7 @@ if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 
             object-fit: cover;
             border: 6px solid #2c3e50;
             box-shadow: 0 0 30px rgba(255,255,255,0.2);
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         .speaking-title {
             color: #ffffff;
@@ -141,32 +147,29 @@ if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 
         f"""
         <div class="full-avatar-container">
             <img src="{img_src}" class="full-avatar-img">
-            <div class="speaking-title">Metin SOYAK Konuşuyor...</div>
+            <div class="speaking-title">Metin SOYAK Yanıtlıyor...</div>
         </div>
     """,
         unsafe_allow_html=True,
     )
 
-    # Otomatik Seslendirme Scripti
-    fullscreen_speech_script = f"""
-        <script>
-        function speakFullscreen() {{
-            if ('speechSynthesis' in window) {{
-                window.speechSynthesis.cancel();
-                var msg = new SpeechSynthesisUtterance("{clean_answer}");
-                msg.lang = 'tr-TR';
-                msg.rate = 0.92;
-
-                window.speechSynthesis.speak(msg);
-            }}
-        }}
-        setTimeout(speakFullscreen, 300);
-        </script>
-    """
-    components.html(fullscreen_speech_script, height=0)
+    # HTML5 Ses Çalar (Autoplay + Controls)
+    audio_b64 = latest.get("audio_b64")
+    if audio_b64:
+        st.markdown(
+            f"""
+            <div style="text-align: center; margin-bottom: 20px;">
+                <audio autoplay controls style="width: 80%; max-width: 400px;">
+                    <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
+                    Tarayıcınız ses çalmayı desteklemiyor.
+                </audio>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     # Konuşmayı Bitirip Normal Ekran Dönüş Butonu
-    if st.button("⏹️ Konuşmayı Bitir / Ana Ekrana Dön", use_container_width=True):
+    if st.button("⏹️ Ana Ekrana Dön", use_container_width=True):
         st.session_state["is_speaking"] = False
         st.rerun()
 
@@ -247,8 +250,9 @@ else:
         query_to_send = text_input.strip()
 
     if should_process:
-        with st.spinner("Metin Bey cevabı hazırlıyor..."):
+        with st.spinner("Metin Bey cevabı hazırlıyor ve seslendiriyor..."):
             answer_text = metin_soyak_ai_cevap(query_to_send)
+            audio_b64 = text_to_audio_b64(answer_text)
             time_str = datetime.now().strftime("%H:%M:%S")
 
             st.session_state["story_archive"].insert(
@@ -257,9 +261,10 @@ else:
                     "time": time_str,
                     "prompt": query_to_send,
                     "answer": answer_text,
+                    "audio_b64": audio_b64,
                 },
             )
-            # Konuşma moduna geç
+            # Tam ekran avatar moduna geç
             st.session_state["is_speaking"] = True
             st.rerun()
 
