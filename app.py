@@ -1,4 +1,6 @@
+from io import BytesIO
 import random
+from gTTS import gTTS
 import streamlit as st
 
 # Safari ve Mobil Ekran Ayarları
@@ -60,6 +62,7 @@ st.markdown(
         color: #1c1c1e;
         line-height: 1.7;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        margin-bottom: 15px;
     }
     </style>
 """,
@@ -120,7 +123,7 @@ raw_input = st.text_input(
     placeholder="Örn: evrak, zimmet, teftiş",
 )
 
-if st.button("✍️ HİKAYE ÜRET", use_container_width=True):
+if st.button("✍️ HİKAYE ÜRET VE SESLENDİR", use_container_width=True):
     words = [w.strip().lower() for w in raw_input.split(",") if w.strip()]
 
     if not words:
@@ -133,7 +136,7 @@ if st.button("✍️ HİKAYE ÜRET", use_container_width=True):
         # 1. Giriş
         story.append(random.choice(GIRISLER))
 
-        # 2. Gelişme bölümlerinde kelimeleri doğal dilde yedir
+        # 2. Gelişme
         for i, word in enumerate(words[:2]):
             gelisme_temp = random.choice(GELISMELER)
             story.append(gelisme_temp.format(kw=word))
@@ -145,7 +148,7 @@ if st.button("✍️ HİKAYE ÜRET", use_container_width=True):
 
         full_text = " ".join(story)
 
-        # Doğrudan hikaye çıktısı (Alt unvan/imza yok)
+        # Metin Ekranı
         st.markdown(
             f"""
             <div class="story-box">
@@ -154,3 +157,10 @@ if st.button("✍️ HİKAYE ÜRET", use_container_width=True):
         """,
             unsafe_allow_html=True,
         )
+
+        # SES OLUŞTURMA (gTTS)
+        with st.spinner("🔊 Metin Soyak seslendiriyor..."):
+            tts = gTTS(text=full_text, lang="tr")
+            sound_file = BytesIO()
+            tts.write_to_fp(sound_file)
+            st.audio(sound_file, format="audio/mp3")
