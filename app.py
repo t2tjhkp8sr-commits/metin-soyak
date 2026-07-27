@@ -84,9 +84,15 @@ def metin_soyak_ai_cevap(user_query):
     Kullanıcının Sorduğu Soru: "{user_query}"
     """
 
+    # Model adları için otomatik yedekli kontrol (1.5-flash-latest veya gemini-pro)
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(system_prompt)
+        try:
+            model = genai.GenerativeModel("gemini-1.5-flash-latest")
+            response = model.generate_content(system_prompt)
+        except Exception:
+            model = genai.GenerativeModel("gemini-pro")
+            response = model.generate_content(system_prompt)
+
         return response.text
     except Exception as e:
         return f"Mevzuat incelemesi sırasında teknik bir aksaklık oluştu: {str(e)}"
