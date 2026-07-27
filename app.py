@@ -49,7 +49,6 @@ gif_b64 = get_image_b64(TALKING_GIF)
 
 # Tok Erkek Sesi (tr-TR-AhmetNeural) Oluşturma Fonksiyonu
 async def generate_male_audio(text):
-    # 'tr-TR-AhmetNeural' derin, tok ve olgun bir Türkçe erkek sesidir.
     voice = "tr-TR-AhmetNeural"
     communicate = edge_tts.Communicate(text, voice)
     output_path = "temp_response.mp3"
@@ -172,16 +171,14 @@ if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 
         unsafe_allow_html=True,
     )
 
-    # Ses Oynatıcı
+    # Doğrudan Tıklama Sonrası Otomatik Çalan Ses
     audio_b64 = latest.get("audio_b64")
     if audio_b64:
         st.markdown(
             f"""
             <div style="text-align: center; margin-bottom: 25px;">
-                <p style="color: #bbb; font-size: 14px; margin-bottom: 8px;">🔊 Yanıtı dinlemek için oynat butonuna basın:</p>
                 <audio controls autoplay style="width: 80%; max-width: 400px;">
                     <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
-                    Tarayıcınız ses çalmayı desteklemiyor.
                 </audio>
             </div>
             """,
@@ -276,7 +273,7 @@ else:
 
     if should_process:
         with st.spinner(
-            "Metin Bey cevabı hazırlıyor ve tok bir sesle seslendiriyor..."
+            "Metin Bey cevabı hazırlıyor..."
         ):
             answer_text = metin_soyak_ai_cevap(query_to_send)
             audio_b64 = text_to_audio_b64(answer_text)
@@ -291,10 +288,16 @@ else:
                     "audio_b64": audio_b64,
                 },
             )
+
+    # Cevap Hazır Olduğunda Dinleme Butonu Çıkar
+    if len(st.session_state["story_archive"]) > 0:
+        latest = st.session_state["story_archive"][0]
+        st.success("✅ Metin Bey cevabı hazırladı!")
+        
+        if st.button("🔊 METİN BEY'İN CEVABINI DİNLE (TAM EKRAN)", use_container_width=True, type="primary"):
             st.session_state["is_speaking"] = True
             st.rerun()
 
-    if len(st.session_state["story_archive"]) > 0:
         st.divider()
         st.subheader("📚 Önceki Sorular")
         for item in st.session_state["story_archive"]:
