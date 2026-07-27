@@ -6,6 +6,7 @@ from datetime import datetime
 import edge_tts
 from google import genai
 import streamlit as st
+import streamlit.components.v1 as components
 
 # 1. Sayfa Ayarları
 st.set_page_config(
@@ -171,20 +172,26 @@ if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 
         unsafe_allow_html=True,
     )
 
-    # Doğrudan Tıklama Sonrası Otomatik Çalan Ses
+    # Otomatik Ses Tetikleyici JS Scripti
     audio_b64 = latest.get("audio_b64")
     if audio_b64:
-        st.markdown(
-            f"""
-            <div style="text-align: center; margin-bottom: 25px;">
-                <audio controls autoplay style="width: 80%; max-width: 400px;">
-                    <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
-                </audio>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        # Gizli bir HTML5 Audio ve Otomatik Çalma Scripti
+        autoplay_script = f"""
+            <audio id="metinAudio" autoplay style="display:none;">
+                <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
+            </audio>
+            <script>
+                var audio = document.getElementById("metinAudio");
+                if (audio) {{
+                    audio.play().catch(function(error) {{
+                        console.log("Autoplay hatası:", error);
+                    }});
+                }}
+            </script>
+        """
+        components.html(autoplay_script, height=0)
 
+    st.write("<br>", unsafe_allow_html=True)
     if st.button("⏹️ Ana Ekrana Dön", use_container_width=True):
         st.session_state["is_speaking"] = False
         st.rerun()
@@ -272,9 +279,7 @@ else:
         query_to_send = text_input.strip()
 
     if should_process:
-        with st.spinner(
-            "Metin Bey cevabı hazırlıyor..."
-        ):
+        with st.spinner("Metin Bey cevabı hazırlıyor..."):
             answer_text = metin_soyak_ai_cevap(query_to_send)
             audio_b64 = text_to_audio_b64(answer_text)
             time_str = datetime.now().strftime("%H:%M:%S")
@@ -289,9 +294,8 @@ else:
                 },
             )
 
-    # Cevap Hazır Olduğunda Dinleme Butonu Çıkar
+    # Cevap Hazır Olduğunda Çıkan Buton
     if len(st.session_state["story_archive"]) > 0:
-        latest = st.session_state["story_archive"][0]
         st.success("✅ Metin Bey cevabı hazırladı!")
         
         if st.button("🔊 METİN BEY'İN CEVABINI DİNLE (TAM EKRAN)", use_container_width=True, type="primary"):
