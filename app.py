@@ -8,7 +8,7 @@ import streamlit.components.v1 as components
 
 # 1. Sayfa Ayarları
 st.set_page_config(
-    page_title="Metin Soyak - Yapay Zeka Yanıt Merkezi",
+    page_title="Metin Soyak AI",
     page_icon="👔",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -21,7 +21,7 @@ try:
 except ImportError:
     MIC_AVAILABLE = False
 
-# 2. Kalıcı Durum Hafızası
+# Kalıcı Durum Hafızası
 if "story_archive" not in st.session_state:
     st.session_state["story_archive"] = []
 if "is_speaking" not in st.session_state:
@@ -29,11 +29,10 @@ if "is_speaking" not in st.session_state:
 if "last_processed_voice" not in st.session_state:
     st.session_state["last_processed_voice"] = ""
 
-# Dosya Adları
+# Dosya Yolları
 STATIC_IMG = "IMG_7535.jpeg"
 TALKING_GIF = "hailuo-2_3_A_52-year-old_Turkish_senior_bureaucrat_talking_subtle_lip_movement_and_head_mot-0-ezgif.com-gif-maker.gif"
 
-# Base64 Görsel Dönüştürücü
 def get_image_b64(file_path):
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
@@ -43,51 +42,10 @@ def get_image_b64(file_path):
 static_b64 = get_image_b64(STATIC_IMG)
 gif_b64 = get_image_b64(TALKING_GIF)
 
-# 3. Temiz ve Şık Arayüz Tasarımı (KORUNDU)
-st.markdown(
-    """
-    <style>
-    .stApp { background-color: #f4f5f7; }
-    .profile-card {
-        background-color: #ffffff;
-        border-radius: 16px;
-        padding: 20px;
-        text-align: center;
-        border: 1px solid #e1e4e8;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        margin-bottom: 20px;
-    }
-    .avatar-img {
-        width: 140px;
-        height: 140px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 4px solid #2c3e50;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        margin-bottom: 10px;
-    }
-    .answer-card {
-        background-color: #ffffff;
-        border-left: 6px solid #2c3e50;
-        padding: 18px 22px;
-        border-radius: 12px;
-        font-size: 16px;
-        color: #1a1a1a;
-        line-height: 1.7;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-        margin-top: 15px;
-        margin-bottom: 15px;
-    }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
-
-
-# 4. Yapay Zeka Motoru
+# 2. Yapay Zeka Motoru
 def metin_soyak_ai_cevap(user_query):
     if "GEMINI_API_KEY" not in st.secrets or not st.secrets["GEMINI_API_KEY"]:
-        return "⚠️ HATA: Streamlit Secrets alanında 'GEMINI_API_KEY' bulunamadı!"
+        return "HATA: Secrets alanında 'GEMINI_API_KEY' bulunamadı!"
 
     api_key = st.secrets["GEMINI_API_KEY"].strip()
 
@@ -127,96 +85,15 @@ def metin_soyak_ai_cevap(user_query):
             except Exception:
                 continue
 
-        return "⚠️ Yanıt üretilemedi. Lütfen tekrar deneyin."
+        return "Yanıt üretilemedi. Lütfen tekrar deneyin."
 
     except Exception as e:
-        return f"🚨 HATA: {str(e)}"
+        return f"HATA: {str(e)}"
 
 
-# --- ÜST PROFİL KARTI ---
-if st.session_state["is_speaking"] and gif_b64:
-    img_src = f"data:image/gif;base64,{gif_b64}"
-elif static_b64:
-    img_src = f"data:image/jpeg;base64,{static_b64}"
-else:
-    img_src = "https://img.icons8.com/color/96/user-male-circle--v1.png"
-
-st.markdown(
-    f"""
-    <div class="profile-card">
-        <img src="{img_src}" class="avatar-img"><br>
-        <div style="font-size:22px; font-weight:700; color:#2c3e50;">Metin SOYAK (52)</div>
-        <div style="font-size:13px; color:#7f8c8d; font-weight:600; margin-bottom:8px;">Müdiriyet Kıdemli Başyazarı & Evrak Uzmanı</div>
-        <div style="font-size:12px; color:#555; font-style:italic;">"Sorunuz ne olursa olsun; doğru ve gerçek yanıtı verir, kendi üslubumla ve sıfır hatayla açıklarım!"</div>
-    </div>
-""",
-    unsafe_allow_html=True,
-)
-
-
-# --- SORU ALMA ALANI ---
-st.subheader("🎙️ Sorunuzu İletin")
-
-voice_input = ""
-if MIC_AVAILABLE:
-    voice_input = speech_to_text(
-        language="tr",
-        start_prompt="🎤 Mikrofona Basıp Konuşun",
-        stop_prompt="⏹️ Kaydı Bitir",
-        just_once=True,
-        key="STT_MIC",
-    )
-
-text_input = st.text_area(
-    "📝 Sorunuz:",
-    value=voice_input if voice_input else "",
-    placeholder="Mikrofona basıp konuşun veya sorunuzu buraya yazın...",
-    height=80,
-)
-
-# Sesli soru geldiğinde otomatik çalıştırma mantığı
-should_process = False
-query_to_send = ""
-
-if voice_input and voice_input != st.session_state["last_processed_voice"]:
-    should_process = True
-    query_to_send = voice_input
-    st.session_state["last_processed_voice"] = voice_input
-
-button_clicked = st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True)
-
-if button_clicked and text_input.strip():
-    should_process = True
-    query_to_send = text_input.strip()
-
-# YANIT ÜRETME AKIŞI
-if should_process:
-    with st.spinner("Metin Bey mevzuatı ve cevabı inceliyor..."):
-        answer_text = metin_soyak_ai_cevap(query_to_send)
-        time_str = datetime.now().strftime("%H:%M:%S")
-
-        st.session_state["story_archive"].insert(
-            0,
-            {
-                "time": time_str,
-                "prompt": query_to_send,
-                "answer": answer_text,
-            },
-        )
-        st.session_state["is_speaking"] = True
-        st.rerun()
-
-
-# --- CEVAP VE OTOMATİK SESLENDİRME ---
-if len(st.session_state["story_archive"]) > 0:
+# --- EĞER METİN BEY KONUŞUYORSA: TAM EKRAN AVATAR MODU ---
+if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 0:
     latest = st.session_state["story_archive"][0]
-
-    st.markdown("### 💬 Metin Soyak'ın Cevabı")
-    st.markdown(
-        f'<div class="answer-card">{latest["answer"]}</div>',
-        unsafe_allow_html=True,
-    )
-
     clean_answer = (
         latest["answer"]
         .replace("'", "\\'")
@@ -224,34 +101,171 @@ if len(st.session_state["story_archive"]) > 0:
         .replace("\n", " ")
     )
 
+    # Bütün varsayılan Streamlit arayüzünü gizleyen CSS
+    st.markdown(
+        """
+        <style>
+        header, footer, .stDeployButton { display: none !important; }
+        .stApp { background-color: #111111; }
+        .full-avatar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 80vh;
+            text-align: center;
+        }
+        .full-avatar-img {
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 6px solid #2c3e50;
+            box-shadow: 0 0 30px rgba(255,255,255,0.2);
+            margin-bottom: 25px;
+        }
+        .speaking-title {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        </style>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    img_src = f"data:image/gif;base64,{gif_b64}" if gif_b64 else "https://img.icons8.com/color/96/user-male-circle--v1.png"
+
+    st.markdown(
+        f"""
+        <div class="full-avatar-container">
+            <img src="{img_src}" class="full-avatar-img">
+            <div class="speaking-title">Metin SOYAK Konuşuyor...</div>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
     # Otomatik Seslendirme Scripti
-    auto_speak_script = f"""
+    fullscreen_speech_script = f"""
         <script>
-        function speakNow() {{
+        function speakFullscreen() {{
             if ('speechSynthesis' in window) {{
                 window.speechSynthesis.cancel();
                 var msg = new SpeechSynthesisUtterance("{clean_answer}");
                 msg.lang = 'tr-TR';
-                msg.rate = 0.93;
+                msg.rate = 0.92;
+
                 window.speechSynthesis.speak(msg);
             }}
         }}
-        setTimeout(speakNow, 200);
+        setTimeout(speakFullscreen, 300);
         </script>
     """
-    components.html(auto_speak_script, height=0)
+    components.html(fullscreen_speech_script, height=0)
 
-    # Avatar Görsel Sıfırlama Butonu
-    if st.session_state["is_speaking"]:
-        if st.button("⏹️ Durağan Fotoğrafa Dön", use_container_width=True):
-            st.session_state["is_speaking"] = False
+    # Konuşmayı Bitirip Normal Ekran Dönüş Butonu
+    if st.button("⏹️ Konuşmayı Bitir / Ana Ekrana Dön", use_container_width=True):
+        st.session_state["is_speaking"] = False
+        st.rerun()
+
+else:
+    # --- NORMAL ARAYÜZ (SORU SORMA MODU) ---
+    st.markdown(
+        """
+        <style>
+        .stApp { background-color: #f4f5f7; }
+        .profile-card {
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #e1e4e8;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .avatar-img {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #2c3e50;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            margin-bottom: 10px;
+        }
+        </style>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    img_src = f"data:image/jpeg;base64,{static_b64}" if static_b64 else "https://img.icons8.com/color/96/user-male-circle--v1.png"
+
+    st.markdown(
+        f"""
+        <div class="profile-card">
+            <img src="{img_src}" class="avatar-img"><br>
+            <div style="font-size:22px; font-weight:700; color:#2c3e50;">Metin SOYAK (52)</div>
+            <div style="font-size:13px; color:#7f8c8d; font-weight:600; margin-bottom:8px;">Müdiriyet Kıdemli Başyazarı & Evrak Uzmanı</div>
+            <div style="font-size:12px; color:#555; font-style:italic;">"Sorunuz ne olursa olsun; doğru ve gerçek yanıtı verir, kendi üslubumla ve sıfır hatayla açıklarım!"</div>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    st.subheader("🎙️ Sorunuzu İletin")
+
+    voice_input = ""
+    if MIC_AVAILABLE:
+        voice_input = speech_to_text(
+            language="tr",
+            start_prompt="🎤 Mikrofona Basıp Konuşun",
+            stop_prompt="⏹️ Kaydı Bitir ve Sor",
+            just_once=True,
+            key="STT_MIC",
+        )
+
+    text_input = st.text_area(
+        "📝 Sorunuz:",
+        value=voice_input if voice_input else "",
+        placeholder="Mikrofona basıp konuşun veya sorunuzu buraya yazın...",
+        height=80,
+    )
+
+    should_process = False
+    query_to_send = ""
+
+    if voice_input and voice_input != st.session_state["last_processed_voice"]:
+        should_process = True
+        query_to_send = voice_input
+        st.session_state["last_processed_voice"] = voice_input
+
+    button_clicked = st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True)
+
+    if button_clicked and text_input.strip():
+        should_process = True
+        query_to_send = text_input.strip()
+
+    if should_process:
+        with st.spinner("Metin Bey cevabı hazırlıyor..."):
+            answer_text = metin_soyak_ai_cevap(query_to_send)
+            time_str = datetime.now().strftime("%H:%M:%S")
+
+            st.session_state["story_archive"].insert(
+                0,
+                {
+                    "time": time_str,
+                    "prompt": query_to_send,
+                    "answer": answer_text,
+                },
+            )
+            # Konuşma moduna geç
+            st.session_state["is_speaking"] = True
             st.rerun()
 
-# --- GEÇMİŞ ARŞİV ---
-if len(st.session_state["story_archive"]) > 1:
-    st.divider()
-    st.subheader(f"📚 Önceki Sorular ({len(st.session_state['story_archive']) - 1})")
-
-    for idx, item in enumerate(st.session_state["story_archive"][1:], start=1):
-        with st.expander(f"🕒 {item['time']} - \"{item['prompt'][:35]}...\""):
-            st.write(item["answer"])
+    if len(st.session_state["story_archive"]) > 0:
+        st.divider()
+        st.subheader("📚 Önceki Sorular")
+        for item in st.session_state["story_archive"]:
+            with st.expander(f"🕒 {item['time']} - \"{item['prompt'][:35]}...\""):
+                st.write(item["answer"])
