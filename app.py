@@ -1,6 +1,6 @@
 from datetime import datetime
 import traceback
-import google.generativeai as genai
+from google import genai
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -60,7 +60,7 @@ st.caption(
 )
 
 
-# --- YAPAY ZEKA MOTORU ---
+# --- YAPAY ZEKA MOTORU (Yeni Google GenAI SDK) ---
 def metin_soyak_ai_cevap(user_query):
     if "GEMINI_API_KEY" not in st.secrets or not st.secrets["GEMINI_API_KEY"]:
         return "⚠️ HATA: Streamlit Secrets alanında 'GEMINI_API_KEY' bulunamadı!"
@@ -81,21 +81,24 @@ def metin_soyak_ai_cevap(user_query):
     Kullanıcının Sorduğu Soru: "{user_query}"
     """
 
-    genai.configure(api_key=api_key)
+    try:
+        # Yeni SDK Client Yapılandırması
+        client = genai.Client(api_key=api_key)
 
-    # Güncel ve geçerli model isimleri
-    models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-8b"]
+        # Yeni API model çağrısı
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=system_prompt,
+        )
 
-    for model_name in models_to_try:
-        try:
-            model = genai.GenerativeModel(model_name)
-            response = model.generate_content(system_prompt)
-            if response and response.text:
-                return response.text
-        except Exception:
-            continue
+        if response and response.text:
+            return response.text
+        else:
+            return "API yanıt verdi ancak metin boş döndü."
 
-    return "🚨 TEKNİK HATA: Tanımlanan tüm Gemini modelleri 404 döndü. Lütfen API key yetkilerinizi veya Google AI Studio hesabınızı kontrol edin."
+    except Exception as e:
+        error_details = traceback.format_exc()
+        return f"🚨 TEKNİK DETAYLI HATA:\n{str(e)}\n\n{error_details[:200]}"
 
 
 # GİRDİ ALANI
