@@ -1,6 +1,7 @@
-from datetime import datetime
 import random
 import traceback
+from datetime import datetime
+
 from google import genai
 import streamlit as st
 import streamlit.components.v1 as components
@@ -16,9 +17,6 @@ st.set_page_config(
 # 2. Kalıcı Arşiv Hafızası
 if "story_archive" not in st.session_state:
     st.session_state["story_archive"] = []
-
-if "user_input_text" not in st.session_state:
-    st.session_state["user_input_text"] = ""
 
 # 3. Tasarım
 st.markdown(
@@ -84,8 +82,8 @@ def metin_soyak_ai_cevap(user_query):
     Sen Metin SOYAK'sın. 52 yaşında, 30 yıllık kıdemli memur, evrak uzmanı ve başyazarsın.
     
     ÇOK ÖNEMLİ KISITLAMALAR:
-    1. KISA VE ÖZ OL: Cevabın TOPLAMDA MAXIMUM 2 VEYA 3 KISA CÜMLE olsun. Asla uzun paragraflar yazma!
-    2. DOĞRU CEVAP: Soruya doğru ve net cevabı ver.
+    1. KISA VE ÖZ OL: Cevabın TOPLAMDA MAXIMUM  5 VEYA 10 KISA CÜMLE olsun. Asla uzun paragraflar yazma!
+    2. DOĞRU CEVAP: Soruya doğru ve net cevabı ver arada absürd cevap ver.
     3. HAFİF ALAKASIZ BÜROKRATİK TEPKİ: Cevabın bir yerine şu cümleyi veya benzeri komik bir bürokratik detayı ekle: "{chosen_distraction}"
     4. TON: Aşırı kendinden emin, "Sıfır Hata" diyen, resmi ama renkli bir üslup.
 
@@ -113,7 +111,7 @@ def metin_soyak_ai_cevap(user_query):
         return f"🚨 HATA: {str(e)}"
 
 
-# --- MİKROFON İLE SESLİ SORU SIRALAMA BİLEŞENİ ---
+# --- MİKROFON İLE SESLİ SORU (OTOMATİK GÖNDERİMLİ) ---
 st.markdown("### 🎙️ Soru Sorun")
 
 st_voice_html = """
@@ -136,20 +134,31 @@ st_voice_html = """
             recognition.onresult = function(e) {
                 var transcript = e.results[0][0].transcript;
                 recognition.stop();
-                btn.innerHTML = "🎤 MİKROFON İLE KONUŞUP YAZDIR";
+                btn.innerHTML = "🎤 MİKROFON İLE KONUŞ VE OTOMATİK SOR";
                 btn.style.background = "#27ae60";
 
-                // Metni ana penceredeki Streamlit textarea kutusuna doldurur
-                var textarea = window.parent.document.querySelector('textarea');
+                // Metni doldur ve otomatik butona bas
+                var doc = window.parent.document;
+                var textarea = doc.querySelector('textarea');
                 if (textarea) {
                     textarea.value = transcript;
                     textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    
+                    setTimeout(function() {
+                        var buttons = doc.querySelectorAll('button');
+                        for (var i = 0; i < buttons.length; i++) {
+                            if (buttons[i].innerText.includes("METİN SOYAK'A SOR")) {
+                                buttons[i].click();
+                                break;
+                            }
+                        }
+                    }, 500);
                 }
             };
 
             recognition.onerror = function(e) {
                 recognition.stop();
-                btn.innerHTML = "🎤 MİKROFON İLE KONUŞUP YAZDIR";
+                btn.innerHTML = "🎤 MİKROFON İLE KONUŞ VE OTOMATİK SOR";
                 btn.style.background = "#2c3e50";
                 alert("Ses algılanamadı veya mikrofon izni verilmedi.");
             };
@@ -160,7 +169,7 @@ st_voice_html = """
     </script>
     <button id="mic-btn" onclick="startDictation()" 
     style="width:100%; background:#2c3e50; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:14px; margin-bottom:10px;">
-    🎤 MİKROFON İLE KONUŞUP YAZDIR
+    🎤 MİKROFON İLE KONUŞ VE OTOMATİK SOR
     </button>
 """
 components.html(st_voice_html, height=55)
@@ -169,7 +178,7 @@ components.html(st_voice_html, height=55)
 user_prompt = st.text_area(
     "📝 Metin Soyak'a Bir Soru Sorun (Maksimum 50 kelime):",
     value="",
-    placeholder="Mikrofona basıp konuşabilir ya da buraya yazabilirsiniz...",
+    placeholder="Mikrofona basıp konuştuğunuzda otomatik cevaplanacaktır...",
     height=90,
 )
 
