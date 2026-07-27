@@ -1,4 +1,5 @@
 from datetime import datetime
+import random
 import traceback
 from google import genai
 import streamlit as st
@@ -15,6 +16,9 @@ st.set_page_config(
 # 2. Kalıcı Arşiv Hafızası
 if "story_archive" not in st.session_state:
     st.session_state["story_archive"] = []
+
+if "user_input_text" not in st.session_state:
+    st.session_state["user_input_text"] = ""
 
 # 3. Tasarım
 st.markdown(
@@ -67,17 +71,24 @@ def metin_soyak_ai_cevap(user_query):
 
     api_key = st.secrets["GEMINI_API_KEY"].strip()
 
+    random_distractions = [
+        "Lafın arasına girmesin ama az önce masama hatalı bir evrak geldi, yine imza eksik...",
+        "Tam buna cevap verirken çaycı Hüseyin Efendi taze çay getirdi, bir yudum alıp devam edeyim.",
+        "Şu an koridorda bir gürültü var ama ben Sıfır Hata prensibimden taviz vermem.",
+        "Gözlüğümün camı silinmemiş, ama mevzuatı ezbere bildiğim için sorun yok.",
+        "Geçen gün dairede de tam bu konu açılmıştı, millet bilip bilmeden konuşuyordu...",
+    ]
+    chosen_distraction = random.choice(random_distractions)
+
     system_prompt = f"""
-    Sen Metin SOYAK'sın. 52 yaşında, 30 yıllık kıdemli bir memur, evrak uzmanı ve başyazarsın.
+    Sen Metin SOYAK'sın. 52 yaşında, 30 yıllık kıdemli memur, evrak uzmanı ve başyazarsın.
     
-    Karakter Kuralları:
-    - Kendine aşırı güvenirsin, "Sıfır Hata" takıntın vardır.
-    - Çok konuşursun, hafif bürokratik ve resmi bir dil kullanırsın ama günlük hayatın içindesin.
-    - Kullanıcı sana ne sorarsa sorsun, ÖNCE sorunun GERÇEK VE DOĞRU CEVABINI (fıkhi, bilimsel, hukuki veya mantıki) net olarak tespit et ve açıkla.
-    - Kesinlikle hikaye uydurup "çay sırasındaydım, masamdaydım" gibi hep aynı basma kalıp olaylara girme. Doğrudan soruya ve cevaba odaklan.
-    - Doğru cevabı verdikten sonra Metin Soyak olarak kendine has üslubunla ("Varsın lafı uzattı desinler, doğru bilgi budur", "Noktası virgülüne sıfır hatayla açıkladım" gibi) resmiyetle konuyu bağla.
-    - Toplamda 2-3 paragrafı geçme.
-    
+    ÇOK ÖNEMLİ KISITLAMALAR:
+    1. KISA VE ÖZ OL: Cevabın TOPLAMDA MAXIMUM 2 VEYA 3 KISA CÜMLE olsun. Asla uzun paragraflar yazma!
+    2. DOĞRU CEVAP: Soruya doğru ve net cevabı ver.
+    3. HAFİF ALAKASIZ BÜROKRATİK TEPKİ: Cevabın bir yerine şu cümleyi veya benzeri komik bir bürokratik detayı ekle: "{chosen_distraction}"
+    4. TON: Aşırı kendinden emin, "Sıfır Hata" diyen, resmi ama renkli bir üslup.
+
     Kullanıcının Sorduğu Soru: "{user_query}"
     """
 
@@ -96,22 +107,74 @@ def metin_soyak_ai_cevap(user_query):
             except Exception:
                 continue
 
-        return "⚠️ Mevcut API Key'inize tanımlı çalışan bir yapay zeka modeli bulunamadı."
+        return "⚠️ Yanıt üretilemedi. Lütfen tekrar deneyin."
 
     except Exception as e:
-        return f"🚨 API BAĞLANTI HATASI: {str(e)}"
+        return f"🚨 HATA: {str(e)}"
 
+
+# --- MİKROFON İLE SESLİ SORU SIRALAMA BİLEŞENİ ---
+st.markdown("### 🎙️ Soru Sorun")
+
+st_voice_html = """
+    <script>
+    function startDictation() {
+        if (window.hasOwnProperty('webkitSpeechRecognition') || window.hasOwnProperty('SpeechRecognition')) {
+            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            var recognition = new SpeechRecognition();
+
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = "tr-TR";
+            
+            var btn = document.getElementById('mic-btn');
+            btn.innerHTML = "🔴 Dinleniyor... Konuşun!";
+            btn.style.background = "#e74c3c";
+
+            recognition.start();
+
+            recognition.onresult = function(e) {
+                var transcript = e.results[0][0].transcript;
+                recognition.stop();
+                btn.innerHTML = "🎤 MİKROFON İLE KONUŞUP YAZDIR";
+                btn.style.background = "#27ae60";
+
+                // Metni ana penceredeki Streamlit textarea kutusuna doldurur
+                var textarea = window.parent.document.querySelector('textarea');
+                if (textarea) {
+                    textarea.value = transcript;
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            };
+
+            recognition.onerror = function(e) {
+                recognition.stop();
+                btn.innerHTML = "🎤 MİKROFON İLE KONUŞUP YAZDIR";
+                btn.style.background = "#2c3e50";
+                alert("Ses algılanamadı veya mikrofon izni verilmedi.");
+            };
+        } else {
+            alert("Tarayıcınız ses tanıma özelliğini desteklemiyor. Lütfen Chrome veya Safari kullanın.");
+        }
+    }
+    </script>
+    <button id="mic-btn" onclick="startDictation()" 
+    style="width:100%; background:#2c3e50; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:14px; margin-bottom:10px;">
+    🎤 MİKROFON İLE KONUŞUP YAZDIR
+    </button>
+"""
+components.html(st_voice_html, height=55)
 
 # GİRDİ ALANI
 user_prompt = st.text_area(
     "📝 Metin Soyak'a Bir Soru Sorun (Maksimum 50 kelime):",
-    value="Migrostan alışveriş caiz mi?",
-    placeholder="Örn: Borsa oynamak caiz mi? / Temettü yatırımı nasıl yapılır?",
+    value="",
+    placeholder="Mikrofona basıp konuşabilir ya da buraya yazabilirsiniz...",
     height=90,
 )
 
 words = user_prompt.strip().split()
-word_count = len(words)
+word_count = len(words) if user_prompt.strip() else 0
 st.caption(f"📊 Kelime Sayısı: **{word_count} / 50**")
 
 # CEVAPLAMA BUTONU
@@ -144,7 +207,6 @@ if len(st.session_state["story_archive"]) > 0:
         unsafe_allow_html=True,
     )
 
-    # Seslendirme için metni hazırlama
     clean_text = (
         latest["answer"]
         .replace("'", "\\'")
@@ -161,17 +223,7 @@ if len(st.session_state["story_archive"]) > 0:
                 var msg = new SpeechSynthesisUtterance(text);
                 msg.lang = 'tr-TR';
                 msg.rate = 0.95;
-                
-                // Türkçe ses bulma garantisi
-                var voices = window.speechSynthesis.getVoices();
-                var trVoice = voices.find(function(v) {{ return v.lang.includes('tr'); }});
-                if (trVoice) {{
-                    msg.voice = trVoice;
-                }}
-                
                 window.speechSynthesis.speak(msg);
-            }} else {{
-                alert("Tarayıcınız sesli okumayı desteklemiyor.");
             }}
         }}
         </script>
@@ -192,7 +244,7 @@ if len(st.session_state["story_archive"]) > 0:
     for idx, item in enumerate(st.session_state["story_archive"]):
         expander_title = f"🕒 {item['time']} - Soru: \"{item['prompt'][:40]}\""
 
-        with st.expander(expander_title):
+        with st.expander(expander_title, expanded=(idx == 0)):
             st.write(item["answer"])
 
             arch_text = (
