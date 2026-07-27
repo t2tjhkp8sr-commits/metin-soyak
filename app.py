@@ -1,4 +1,5 @@
 from datetime import datetime
+import traceback
 import google.generativeai as genai
 import streamlit as st
 import streamlit.components.v1 as components
@@ -11,20 +12,11 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# 2. GEMINI API KEY (Streamlit Secrets Üzerinden Güvenli Okuma)
-try:
-    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-    genai.configure(api_key=GEMINI_API_KEY)
-except Exception:
-    st.error(
-        "⚠️ API Key bulunamadı! Lütfen Streamlit Settings -> Secrets alanına GEMINI_API_KEY ekleyin."
-    )
-
-# 3. Kalıcı Arşiv Hafızası
+# 2. Kalıcı Arşiv Hafızası
 if "story_archive" not in st.session_state:
     st.session_state["story_archive"] = []
 
-# 4. Tasarım
+# 3. Tasarım
 st.markdown(
     """
     <style>
@@ -70,12 +62,18 @@ st.caption(
 
 # --- YAPAY ZEKA MOTORU ---
 def metin_soyak_ai_cevap(user_query):
+    # API Key Kontrolü
+    if "GEMINI_API_KEY" not in st.secrets or not st.secrets["GEMINI_API_KEY"]:
+        return "⚠️ HATA: Streamlit Secrets alanında 'GEMINI_API_KEY' bulunamadı!"
+
+    api_key = st.secrets["GEMINI_API_KEY"].strip()
+
     system_prompt = f"""
     Sen Metin SOYAK'sın. 52 yaşında, 30 yıllık kıdemli bir memur, evrak uzmanı ve başyazarsın.
     
     Karakter Kuralları:
     - Kendine aşırı güvenirsin, "Sıfır Hata" takıntın vardır.
-    - Çok konuşursun, hafif bürokratik ve resmi bir dil kullanırsın ama günlük hayatın içindesin (kıraathanede, berberde, evde veya işte olabilirsin).
+    - Çok konuşursun, hafif bürokratik ve resmi bir dil kullanırsın ama günlük hayatın içindesin.
     - Kullanıcı sana ne sorarsa sorsun, ÖNCE sorunun GERÇEK VE DOĞRU CEVABINI (fıkhi, bilimsel, hukuki veya mantıki) net olarak tespit et ve açıkla.
     - Kesinlikle hikaye uydurup "çay sırasındaydım, masamdaydım" gibi hep aynı basma kalıp olaylara girme. Doğrudan soruya ve cevaba odaklan.
     - Doğru cevabı verdikten sonra Metin Soyak olarak kendine has üslubunla ("Varsın lafı uzattı desinler, doğru bilgi budur", "Noktası virgülüne sıfır hatayla açıkladım" gibi) resmiyetle konuyu bağla.
@@ -84,24 +82,23 @@ def metin_soyak_ai_cevap(user_query):
     Kullanıcının Sorduğu Soru: "{user_query}"
     """
 
-    # Güncel ve aktif Gemini modelleri listesi
-    target_models = [
-        "gemini-2.5-flash",
-        "gemini-2.5-pro",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
-    ]
+    try:
+        # API Yapılandırması
+        genai.configure(api_key=api_key)
 
-    for m in target_models:
-        try:
-            model = genai.GenerativeModel(m)
-            response = model.generate_content(system_prompt)
-            if response and response.text:
-                return response.text
-        except Exception:
-            continue
+        # Doğrudan en standart güncel model çağrısı
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(system_prompt)
 
-    return "Mevzuat incelemesi hatası: Güncel hiçbir Gemini modeline erişilemedi. Lütfen API key yetkilerini kontrol edin."
+        if response and response.text:
+            return response.text
+        else:
+            return "API yanıt verdi ancak metin boş döndü."
+
+    except Exception as e:
+        # Detaylı hata çıktısı alıyoruz
+        error_details = traceback.format_exc()
+        return f"🚨 TEKNİK DETAYLI HATA:\n{str(e)}\n\nDetay:\n{error_details[:300]}"
 
 
 # GİRDİ ALANI
@@ -164,7 +161,7 @@ if len(st.session_state["story_archive"]) > 0:
 if len(st.session_state["story_archive"]) > 0:
     st.divider()
     st.subheader(
-        f"📚 Soru ve Cevap Geçmişi ({len(st.session_state['story_archive'])} Kayıt)"
+        f"📚 Soru me Cevap Geçmişi ({len(st.session_state['story_archive'])} Kayıt)"
     )
 
     for idx, item in enumerate(st.session_state["story_archive"]):
