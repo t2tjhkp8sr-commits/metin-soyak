@@ -60,7 +60,7 @@ st.caption(
 )
 
 
-# --- YAPAY ZEKA MOTORU (DİNAMİK MODEL BULUCU) ---
+# --- YAPAY ZEKA MOTORU ---
 def metin_soyak_ai_cevap(user_query):
     if "GEMINI_API_KEY" not in st.secrets or not st.secrets["GEMINI_API_KEY"]:
         return "⚠️ HATA: Streamlit Secrets alanında 'GEMINI_API_KEY' bulunamadı!"
@@ -83,13 +83,9 @@ def metin_soyak_ai_cevap(user_query):
 
     try:
         client = genai.Client(api_key=api_key)
-
-        # Hesabında aktif olan tüm modelleri otomatik çekiyoruz
         available_models = [m.name for m in client.models.list()]
 
-        # generateContent destekleyen ilk aktif modeli bulup kullanıyoruz
         for model_info in available_models:
-            # model ismi "models/gemini-xxx" formatında gelebilir, ismini temizliyoruz
             model_name = model_info.replace("models/", "")
             try:
                 response = client.models.generate_content(
@@ -100,7 +96,7 @@ def metin_soyak_ai_cevap(user_query):
             except Exception:
                 continue
 
-        return "⚠️ Mevcut API Key'inize tanımlı çalışan bir yapay zeka modeli bulunamadı. Lütfen Google AI Studio üzerinden API Key'inizi yenileyin."
+        return "⚠️ Mevcut API Key'inize tanımlı çalışan bir yapay zeka modeli bulunamadı."
 
     except Exception as e:
         return f"🚨 API BAĞLANTI HATASI: {str(e)}"
@@ -148,19 +144,43 @@ if len(st.session_state["story_archive"]) > 0:
         unsafe_allow_html=True,
     )
 
-    clean_text_js = (
+    # Seslendirme için metni hazırlama
+    clean_text = (
         latest["answer"]
         .replace("'", "\\'")
         .replace('"', '\\"')
         .replace("\n", " ")
     )
-    tts_html = f"""
-        <button onclick="window.speechSynthesis.cancel(); var msg = new SpeechSynthesisUtterance('{clean_text_js}'); msg.lang='tr-TR'; msg.rate=0.95; window.speechSynthesis.speak(msg);" 
+
+    tts_script = f"""
+        <script>
+        function speakText() {{
+            if ('speechSynthesis' in window) {{
+                window.speechSynthesis.cancel();
+                var text = "{clean_text}";
+                var msg = new SpeechSynthesisUtterance(text);
+                msg.lang = 'tr-TR';
+                msg.rate = 0.95;
+                
+                // Türkçe ses bulma garantisi
+                var voices = window.speechSynthesis.getVoices();
+                var trVoice = voices.find(function(v) {{ return v.lang.includes('tr'); }});
+                if (trVoice) {{
+                    msg.voice = trVoice;
+                }}
+                
+                window.speechSynthesis.speak(msg);
+            }} else {{
+                alert("Tarayıcınız sesli okumayı desteklemiyor.");
+            }}
+        }}
+        </script>
+        <button onclick="speakText()" 
         style="width:100%; background:#2c3e50; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:15px;">
         🔊 CEVABI SESLİ DİNLE
         </button>
     """
-    components.html(tts_html, height=55)
+    components.html(tts_script, height=60)
 
 # --- TÜM GEÇMİŞ SORULAR VE CEVAPLAR ARŞİVİ ---
 if len(st.session_state["story_archive"]) > 0:
@@ -175,19 +195,30 @@ if len(st.session_state["story_archive"]) > 0:
         with st.expander(expander_title):
             st.write(item["answer"])
 
-            arch_text_js = (
+            arch_text = (
                 item["answer"]
                 .replace("'", "\\'")
                 .replace('"', '\\"')
                 .replace("\n", " ")
             )
             arch_tts = f"""
-                <button onclick="window.speechSynthesis.cancel(); var msg = new SpeechSynthesisUtterance('{arch_text_js}'); msg.lang='tr-TR'; msg.rate=0.95; window.speechSynthesis.speak(msg);" 
+                <script>
+                function speakArch_{idx}() {{
+                    if ('speechSynthesis' in window) {{
+                        window.speechSynthesis.cancel();
+                        var msg = new SpeechSynthesisUtterance("{arch_text}");
+                        msg.lang = 'tr-TR';
+                        msg.rate = 0.95;
+                        window.speechSynthesis.speak(msg);
+                    }}
+                }}
+                </script>
+                <button onclick="speakArch_{idx}()" 
                 style="width:100%; background:#8e8e93; color:white; border:none; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:13px; margin-top:5px;">
                 🔊 Bu Cevabı Sesli Dinle
                 </button>
             """
-            components.html(arch_tts, height=45)
+            components.html(arch_tts, height=50)
 
             st.download_button(
                 label="📥 Cevabı İndir (.txt)",
