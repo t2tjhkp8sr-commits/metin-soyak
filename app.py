@@ -291,7 +291,7 @@ else:
     if len(st.session_state["story_archive"]) > 0:
         st.success("✅ Metin Bey cevabı hazırladı!")
         
-        if st.button("🔊 METİN BEY'İN CEVABINI DİNLE (TAM EKRAN)", use_container_width=True, type="primary"):
+        if st.button("🔊 Cevabı Gör", use_container_width=True, type="primary"):
             st.session_state["is_speaking"] = True
             st.rerun()
 
