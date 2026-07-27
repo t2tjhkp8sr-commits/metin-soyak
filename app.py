@@ -26,6 +26,8 @@ if "story_archive" not in st.session_state:
     st.session_state["story_archive"] = []
 if "is_speaking" not in st.session_state:
     st.session_state["is_speaking"] = False
+if "last_processed_voice" not in st.session_state:
+    st.session_state["last_processed_voice"] = ""
 
 # Dosya Adları
 STATIC_IMG = "IMG_7535.jpeg"
@@ -41,7 +43,7 @@ def get_image_b64(file_path):
 static_b64 = get_image_b64(STATIC_IMG)
 gif_b64 = get_image_b64(TALKING_GIF)
 
-# 3. Temiz ve Şık Arayüz Tasarımı (CSS)
+# 3. Temiz ve Şık Arayüz Tasarımı (KORUNDU)
 st.markdown(
     """
     <style>
@@ -131,7 +133,7 @@ def metin_soyak_ai_cevap(user_query):
         return f"🚨 HATA: {str(e)}"
 
 
-# --- üst PROFİL KARTI ---
+# --- ÜST PROFİL KARTI ---
 if st.session_state["is_speaking"] and gif_b64:
     img_src = f"data:image/gif;base64,{gif_b64}"
 elif static_b64:
@@ -172,26 +174,37 @@ text_input = st.text_area(
     height=80,
 )
 
-active_query = voice_input if voice_input else text_input.strip()
+# Sesli soru geldiğinde otomatik çalıştırma mantığı
+should_process = False
+query_to_send = ""
 
-if st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True):
-    if not active_query:
-        st.warning("⚠️ Lütfen Metin Bey'e bir soru sorun veya mikrofona konuşun!")
-    else:
-        with st.spinner("Metin Bey mevzuatı ve cevabı inceliyor..."):
-            answer_text = metin_soyak_ai_cevap(active_query)
-            time_str = datetime.now().strftime("%H:%M:%S")
+if voice_input and voice_input != st.session_state["last_processed_voice"]:
+    should_process = True
+    query_to_send = voice_input
+    st.session_state["last_processed_voice"] = voice_input
 
-            st.session_state["story_archive"].insert(
-                0,
-                {
-                    "time": time_str,
-                    "prompt": active_query,
-                    "answer": answer_text,
-                },
-            )
-            st.session_state["is_speaking"] = True
-            st.rerun()
+button_clicked = st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True)
+
+if button_clicked and text_input.strip():
+    should_process = True
+    query_to_send = text_input.strip()
+
+# YANIT ÜRETME AKIŞI
+if should_process:
+    with st.spinner("Metin Bey mevzuatı ve cevabı inceliyor..."):
+        answer_text = metin_soyak_ai_cevap(query_to_send)
+        time_str = datetime.now().strftime("%H:%M:%S")
+
+        st.session_state["story_archive"].insert(
+            0,
+            {
+                "time": time_str,
+                "prompt": query_to_send,
+                "answer": answer_text,
+            },
+        )
+        st.session_state["is_speaking"] = True
+        st.rerun()
 
 
 # --- CEVAP VE OTOMATİK SESLENDİRME ---
@@ -223,7 +236,7 @@ if len(st.session_state["story_archive"]) > 0:
                 window.speechSynthesis.speak(msg);
             }}
         }}
-        setTimeout(speakNow, 250);
+        setTimeout(speakNow, 200);
         </script>
     """
     components.html(auto_speak_script, height=0)
