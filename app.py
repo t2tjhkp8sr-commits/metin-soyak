@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# iOS Özel Tasarım (Beyaz & Antrasit / Kurumsal Bürokrasi)
+# iOS Özel Tasarım
 st.markdown(
     """
     <style>
@@ -54,12 +54,12 @@ st.markdown(
     .story-box {
         background-color: #ffffff;
         border-left: 5px solid #2c3e50;
-        padding: 16px;
-        border-radius: 8px;
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 14px;
-        color: #2c3e50;
-        line-height: 1.6;
+        padding: 18px;
+        border-radius: 12px;
+        font-size: 15px;
+        color: #1c1c1e;
+        line-height: 1.7;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
     </style>
 """,
@@ -95,47 +95,33 @@ st.caption(
     "💬 *'Müdürlükte 'Yine çok laf az iş' deseler de, evrakta sıfır hata prensibimden taviz vermem!'*"
 )
 
-# ABSÜRT AMACLI BÜROKRATİK HİKAYE ŞABLONLARI
-GIRIS_KALIPLARI = [
-    "Saat tam 09:15’te müdiriyetin 3.05 tarihli genelgesini inceleyip imla hatalarını düzeltirken, daireye sızan inanılmaz bir kriz haberini aldım.",
-    "Bizzat kaleme aldığım 48 sayfalık 'Daire İçi Düzen ve Disiplin Raporu'nun tam ortasındaydım ki koridorda büyük bir kargaşa patlak verdi.",
-    "Müdürlüktekiler 'Yine çok laf az iş yapacak' diye fısıldaşıyordu ama az sonra patlayacak idari felaketten hiçbirinin haberi yoktu.",
+# ÖZGÜN VE AKICI ŞABLON MOTORU
+GIRISLER = [
+    "Saat tam dokuzu çeyrek geçe masamın başındaydım. Müdiriyetin son genelgesindeki noktalama hatalarını düzeltirken binada sıra dışı bir hareketlilik başladı.",
+    "Bizzat kaleme aldığım kurumsal disiplin raporunun dördüncü sayfasındayken koridorda aniden bir kargaşa patlak verdi.",
+    "Etraftakiler yine 'Çok laf az iş' diye kendi aralarında fısıldaşıyordu ama az sonra patlayacak idari felaketten hiçbirinin haberi yoktu.",
 ]
 
-GELISME_1 = [
-    "Olay yerine intikal ettiğimde, meselenin tamamen **{kw}** ile ilgili olduğunu gördüm. Normal bir insan buna sıradan bir olay derdi fakat mevzuata göre bu, katıksız bir usulsüzlüktü.",
-    "Hemen araya girip, **{kw}** hususunda yapılan bu vahim hatanın kurumsal haysiyetimize yakışmadığını belirterek tam 45 dakika boyunca 'Mevzuatın Felsefesi' üzerine konuştum.",
+GELISMELER = [
+    "Olay yerine vardığımda, meselenin doğrudan {kw} etrafında düğümlendiğini fark ettim. Normal bir memur bunu sıradan bir durum sanabilirdi fakat mevzuat açısından tam bir usulsüzlüktü. Hemen araya girip işin felsefesini anlatmaya başladım.",
+    "Tam durumun ciddiyetini vurgularken kriz büyüdü ve işin içine {kw} dahil oldu. Odadaki herkes panikle sağa sola kaçışırken ben 'Sıfır Hata Metin' soğukkanlılığıyla yerimden bile kalkmadım.",
+    "Gözlerimin önünde yaşanan bu absürt tablo karşısında hemen kırmızı kalemimi çıkardım. {kw} sürecinde yapılan mantık hatalarını tespit edip sırasıyla şerh düşmeye başladım.",
 ]
 
-GELISME_2 = [
-    "Ben tam durumun ciddiyetini anlatırken, masanın üzerindeki **{kw}** aniden kontrolden çıkarak durumu tam bir absürdlük komedisine çevirdi.",
-    "Bununla da kalmayıp, krizin içine doğrudan **{kw}** dahil olunca odadaki tüm memurlar panikle sağa sola kaçışmaya başladı.",
-]
-
-KRIS = [
-    "Müteakiben, **{kw}** mevzusu öyle bir noktaya geldi ki, bina amiri dahi ne yapacağını bilemeyip gözlerini bana çevirdi. 'Sıfır Hata Metin' olarak soğukkanlılığımı korumam gerekiyordu.",
-    "Gözlerimin önünde yaşanan bu absürt tablo karşısında hemen kırmızı kalemimi çıkardım ve **{kw}** sürecindeki tüm mantık hatalarını tek tek tespit ettim.",
-]
-
-COZUM = [
-    "Hiç istifimi bozmadan, **{kw}** konusunu resmi prosedüre uygun şekilde, 3 nüsha halinde ve kırmızı kaşeyle mühürleyerek anında çözüme kavuşturdum.",
-    "Bunu yaparken tek bir noktayı, tek bir virgülü bile atlamadım. **{kw}** meselesi bizzat 'Sıfır Hata Metin' imzasıyla resmi sicile işlenmiş oldu.",
-]
-
-SONUC = [
-    "Netice itibarıyla; olayın absürdlüğüne rağmen evrakta sıfır hatayla günü kapattık. Varsın arkamdan 'Yine çok konuştu' desinler, çayımı koyup evrakı arşive kaldırdım.",
-    "Sonuç olarak bir kriz daha ciddiyetimden taviz verilmeden bertaraf edildi. İşi ben yazarım, ben çizerim; kaşeyi basar olayı bitiririm!",
+COZUM_SONUC = [
+    "Nihayetinde hiç istifimi bozmadan {kw} konusunu mevzuata uygun biçimde ele aldım. Olay ne kadar garip olursa olsun, evrakta tek bir imla hatası bile bırakmadan resmi prosedürü tamamladım. Varsın arkamdan yine çok konuştu desinler, günü sıfır hatayla kapattık.",
+    "Son hamle olarak {kw} meselesini dairenin resmi standartlarına kavuşturdum. Ben işimi yazarım, çizerim, nizami hale getiririm. Kriz ne kadar absürt olursa olsun Metin Soyak masadaysa hata çıkmaz.",
 ]
 
 # GİRDİ ALANI
 raw_input = st.text_input(
     "🔑 Anahtar Kelimeler (Virgülle ayırın):",
-    value="uzay mekiği, çay bardağı, fotokopi makinesi, döner dürüm",
-    placeholder="Örn: uzay mekiği, zürafa, kaşe",
+    value="uzay mekiği, çay bardağı, döner dürüm",
+    placeholder="Örn: evrak, zimmet, teftiş",
 )
 
-if st.button("✍️ ABSÜRT SIFIR HATA HİKAYESİ ÜRET", use_container_width=True):
-    words = [w.strip() for w in raw_input.split(",") if w.strip()]
+if st.button("✍️ HİKAYE ÜRET", use_container_width=True):
+    words = [w.strip().lower() for w in raw_input.split(",") if w.strip()]
 
     if not words:
         st.warning(
@@ -145,46 +131,25 @@ if st.button("✍️ ABSÜRT SIFIR HATA HİKAYESİ ÜRET", use_container_width=T
         story = []
 
         # 1. Giriş
-        story.append(random.choice(GIRIS_KALIPLARI))
+        story.append(random.choice(GIRISLER))
 
-        # 2. Gelişme 1
-        w1 = words[0].upper()
-        story.append(random.choice(GELISME_1).format(kw=w1))
+        # 2. Gelişme bölümlerinde kelimeleri doğal dilde yedir
+        for i, word in enumerate(words[:2]):
+            gelisme_temp = random.choice(GELISMELER)
+            story.append(gelisme_temp.format(kw=word))
 
-        # 3. Gelişme 2 (2 veya daha fazla kelime varsa)
-        if len(words) >= 2:
-            w2 = words[1].upper()
-            story.append(random.choice(GELISME_2).format(kw=w2))
-
-        # 4. Kriz (3 veya daha fazla kelime varsa)
-        if len(words) >= 3:
-            w3 = words[2].upper()
-            story.append(random.choice(KRIS).format(kw=w3))
-        else:
-            story.append(random.choice(KRIS).format(kw=w1))
-
-        # 5. Çözüm (4 veya daha fazla kelime varsa ya da kalanlar)
-        if len(words) >= 4:
-            remaining_kws = ", ".join([w.upper() for w in words[3:]])
-            story.append(random.choice(COZUM).format(kw=remaining_kws))
-        else:
-            story.append(random.choice(COZUM).format(kw=words[-1].upper()))
-
-        # 6. Sonuç
-        story.append(random.choice(SONUC))
+        # 3. Çözüm ve Sonuç
+        last_kw = words[-1] if len(words) > 2 else words[0]
+        cozum_temp = random.choice(COZUM_SONUC)
+        story.append(cozum_temp.format(kw=last_kw))
 
         full_text = " ".join(story)
 
-        st.markdown("### 📜 Onaylanan Resmi Metin")
+        # Doğrudan hikaye çıktısı (Alt unvan/imza yok)
         st.markdown(
             f"""
             <div class="story-box">
                 {full_text}
-                <br><br>
-                <b>----------------------------------------</b><br>
-                <b>[ MÜHÜRLÜ VE ONAYLI EVRAK ]</b><br>
-                <b>Metin SOYAK</b> - Müdiriyet Kıdemli Başyazarı<br>
-                <i>Kanaat: "Sıfır Hata / Çok Laf Az İş"</i>
             </div>
         """,
             unsafe_allow_html=True,
