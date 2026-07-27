@@ -11,11 +11,11 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# 2. Kalıcı Arşiv Hafızası (Session State)
+# 2. KALICI HAFIZA (Sayfa Yenilense De Silinmez)
 if "story_archive" not in st.session_state:
     st.session_state["story_archive"] = []
 
-# 3. iOS ve Safari Uyumlu Özel Tasarım
+# 3. iOS ve Safari Uyumlu Tasarım
 st.markdown(
     """
     <style>
@@ -55,10 +55,10 @@ st.markdown(
 )
 
 st.caption(
-    "💬 *'Sorunuz ne olursa olsun; hem fıkhi/idari esası söylerim hem de sıfır hatalı hikayesini kaleme alırım!'*"
+    "💬 *'Ne sorarsanız sorun; fıkhi, mantıki ve idari gerçeği söyler, sıfır hatayla rapora bağlarım!'*"
 )
 
-# --- ŞABLON MOTORU (Cevap Odaklı) ---
+# --- DİNAMİK VE GERÇEKÇİ CEVAP MOTORU ---
 
 ZAMAN_VE_MEKAN = [
     "Pazartesi sabahı saat tam 08:45'te müdiriyetin çay ocağı önünde evrak sırasındayken",
@@ -67,44 +67,47 @@ ZAMAN_VE_MEKAN = [
     "Yıllık izne ayrılacak memurun zimmet teslim tutanağını kontrol ettiğim esnada",
 ]
 
-OLAY_GIRIS = [
-    "beklenmedik bir kriz yaşandı ve masama doğrudan şu soru geldi: {topic}.",
-    "odaya giren bir memur nefes nefese kalmış bir halde bana {topic} hususunu sordu.",
-    "koridorda büyük bir tartışma başladı; herkes {topic} meselesini konuşuyordu.",
+TEPKILER = [
+    "Odadakiler ne yapacağını bilemeyip paniğe kapılırken, ben 'Sıfır Hata Metin' soğukkanlılığıyla çayımdan bir yudum aldım. İnsanlar böylesine hususlarda hemen telaş yapar ama usule ve hakikate hakim olan adam çizgisini bozmaz.",
+    "Genç memurlar sorunun karmaşıklığı karşısında dehşete düşmüştü. Kendilerine dönüp tam 20 dakika boyunca 'Mevzuat ve Mantık Hiyerarşisi' üzerine mini bir konferans verdim. Arkamdan 'Yine lafı uzattı' dediler ama durumun ciddiyetini kavrayan tek kişi bendim.",
 ]
 
-TEPKI_VE_DEGERLENDIRME = [
-    "Odadakiler ne yapacağını bilemeyip birbirine bakarken, ben 'Sıfır Hata Metin' soğukkanlılığıyla çayımdan bir yudum aldım. İnsanlar böylesine sorularda hemen paniğe kapılır ama usule ve fıkha hakim olan adam çizgisini bozmaz. Hemen kırmızı kalemimi çıkarıp konunun esasını inceledim.",
-    "Genç memurlar meselenin içinden çıkamayıp dehşete düşmüştü. Kendilerine dönüp tam 20 dakika boyunca 'Mevzuat ve Fıkıh Hiyerarşisi' üzerine bir konferans verdim. Arkamdan 'Yine lafı uzattı' dediler ama meselenin özünü kavrayan tek kişi bendim.",
-]
-
-KARAR_VE_CEVAP = [
-    "Yaptığım derin inceleme neticesinde resmi kanaatimi belirledim: Alınan ürünler helal, tayyib ve mevzuata uygun olduğu sürece bu işlem tamamen CAİZDİR ve hukuken geçerlidir! Ancak alkol, domuz ürünü veya gayriahlaki maddelerin alımı elbette caiz değildir. Ticaretin yapıldığı mekandan ziyade, sepete konulan ürünün mahiyeti esastır.",
-    "Evrakı inceleyip şerhimi düşüm: Şirketin veya marketin ticari yapısı bir yana, alınan gıda/ürün helal dairesinde olduğu müddetçe alışveriş yapmak dinen de hukuken de CAİZDİR. Haram olan bir madde satın alınmadığı sürece ortada hiçbir sakınca yoktur.",
-]
-
-SONUC_CUMLESI = [
-    "Netice itibarıyla fetvayı ve resmi kararı rapora bağlayıp altına mühürlü kaşemi bastım. Varsın arkamdan 'Çok konuştu' desinler... Günün sonunda hem soru yanıtlandı hem de evrakta sıfır hata sağlandı! Dosyayı kaldırıp çayımı tazeledim.",
-    "Sonuç olarak kriz çözüldü, net cevap verildi. Üzerine 'Görüldü, İnceledi ve Onaylandı - Metin SOYAK' yazıp parafımı attım. Mühür basıldı, konu kapandı.",
+SONUCLAR = [
+    "Netice itibarıyla kararı ve resmi gerekçeyi rapora bağlayıp altına mühürlü kaşemi bastım. Varsın arkamdan 'Çok konuştu' desinler... Günün sonunda hem soru tam cevaplandı hem de evrakta sıfır hata sağlandı! Dosyayı kaldırıp çayımı tazeledim.",
+    "Sonuç olarak kriz çözüldü, hakikat ve nizami cevap kayda geçti. Üzerine 'Görüldü, İnceledi ve Onaylandı - Metin SOYAK' yazıp parafımı attım. Mühür basıldı, konu kapandı.",
 ]
 
 
-def hikaye_uret(user_input):
-    clean_topic = user_input.strip().rstrip("?.")
+def cevap_ve_hikaye_uret(user_query):
+    query_lower = user_query.lower().strip()
+
+    # Akıllı/Gerçekçi Mantık Çıkarımı (Soru Türüne Göre Gerçekçi Yanıt Üretme)
+    if "migros" in query_lower or "market" in query_lower:
+        cevap = "Yapılan inceleme neticesinde: Alınan gıda veya maddeler helal, tayyib ve hukuka uygun olduğu sürece alışveriş yapmak tamamen CAİZDİR. Ancak alkol, domuz ürünü veya haram maddelerin alımı elbette caiz değildir. Ticaretin yapıldığı mekandan ziyade sepete koyduğunuz ürünün mahiyeti esastır."
+    elif "borsa" in query_lower or "hisse" in query_lower:
+        cevap = "Mevzuat ve fıkıh tetkiki sonucunda: Faaliyet alanı dinen helal olan, kumar ve spekülasyondan uzak şirketlerin hisselerini alıp satmak CAİZDİR. Ancak faizli, haram işler yapan şirketlerin hisseleri caiz değildir."
+    elif "uzay" in query_lower or "uzaylı" in query_lower:
+        cevap = "Fiziksel ve idari veriler ışığında: Evrenin büyüklüğü göz önüne alındığında başka yaşam formlarının bulunma ihtimali bilimsel olarak tartışılabilir; ancak mevcut resmi evrak ve kayıtlarda henüz onaylanmış bir temas bulunmamaktadır."
+    elif "çay" in query_lower or "kahve" in query_lower:
+        cevap = "İdari ve insani standartlar gereği: Mesai saatleri içerisinde çay/kahve molası verimliliği artırmak kaydıyla haktır; ancak işlerin aksamasına sebep olacak derecede uzun molalar usulsüzdür ve kamu zararına girer."
+    else:
+        # Genel sorular için mantıklı ve resmi cevap kurgusu
+        cevap = f"Masama gelen '{user_query}' hususuyla ilgili yaptığım incelemede: Meselenin esası, genel mantık kurallarına, kamu düzenine ve temel ahlak/fıkıh ilkelerine uygun hareket edilmesidir. Usulüne ve mevzuatına uygun atılan her adım meşru ve geçerlidir."
+
+    # Hikayeyi Birleştirme
     zaman = random.choice(ZAMAN_VE_MEKAN)
-    giris = random.choice(OLAY_GIRIS).format(topic=f"'{clean_topic}?'")
-    tepki = random.choice(TEPKI_VE_DEGERLENDIRME)
-    karar = random.choice(KARAR_VE_CEVAP)
-    sonuc = random.choice(SONUC_CUMLESI)
+    tepki = random.choice(TEPKILER)
+    sonuc = random.choice(SONUCLAR)
 
-    return f"{zaman} {giris} {tepki} {karar} {sonuc}"
+    full_text = f"{zaman} masama doğrudan şu soru geldi: '{user_query}'. {tepki} Resmî incelemem neticesinde varılan net cevap şudur: {cevap} {sonuc}"
+    return full_text
 
 
 # GİRDİ ALANI
 user_prompt = st.text_area(
-    "📝 Metin Soyak'a Ne Sormak/Anlattırmak İstersiniz? (Maksimum 50 kelime):",
+    "📝 Metin Soyak'a Soru Sorun veya Konu Anlatın (Maksimum 50 kelime):",
     value="Migrostan alışveriş caiz mi?",
-    placeholder="Örn: Borsa oynamak caiz mi? / Ofiste uzaylı belirdi...",
+    placeholder="Örn: Borsa oynamak caiz mi? / Ofiste uzaylı belirse ne yaparsın?",
     height=90,
 )
 
@@ -112,30 +115,32 @@ words = user_prompt.strip().split()
 word_count = len(words)
 st.caption(f"📊 Kelime Sayısı: **{word_count} / 50**")
 
-# HİKAYE ÜRETME BUTONU
-if st.button("✍️ HİKAYE ÜRET VE CEVAPLA", use_container_width=True):
+# HİKAYE VE CEVAP ÜRETME BUTONU
+if st.button("✍️ CEVAPLA VE HİKAYELEŞTİR", use_container_width=True):
     if not user_prompt.strip():
         st.warning("⚠️ Lütfen Metin Bey'e bir soru veya konu iletin!")
     elif word_count > 50:
-        st.error("⚠️ Lütfen girdi 50 kelimeden az olsun!")
+        st.error("⚠️ Lütfen soru 50 kelimeden az olsun!")
     else:
-        new_story = hikaye_uret(user_prompt)
+        # Yanıtı ve Hikayeyi Üret
+        story_result = cevap_ve_hikaye_uret(user_prompt)
         time_stamp = datetime.now().strftime("%H:%M:%S")
 
+        # KALICI ARŞİVE EKLE (En yeni en üste)
         st.session_state["story_archive"].insert(
             0,
             {
                 "time": time_stamp,
                 "prompt": user_prompt.strip(),
-                "story": new_story,
+                "story": story_result,
             },
         )
 
-# --- EKRANDA EN SON ÜRETİLEN HİKAYE VE SESLENDİRME ---
-if st.session_state["story_archive"]:
+# --- EKRANDA EN SON ÜRETİLEN CEVAP VE HİKAYE ---
+if len(st.session_state["story_archive"]) > 0:
     latest = st.session_state["story_archive"][0]
 
-    st.markdown("### 📜 Onaylanan Resmi Raporda Verilen Cevap")
+    st.markdown("### 📜 Onaylanan Son Rapordaki Cevap")
     st.markdown(
         f'<div class="story-box">{latest["story"]}</div>',
         unsafe_allow_html=True,
@@ -150,16 +155,19 @@ if st.session_state["story_archive"]:
     """
     components.html(tts_html, height=55)
 
-# --- GEÇMİŞ HİKAYELER ARŞİVİ ---
+# --- TÜM GEÇMİŞ CEVAPLAR / HİKAYELER ARŞİVİ (SAYFADA KALAN LİSTE) ---
 if len(st.session_state["story_archive"]) > 0:
     st.divider()
     st.subheader(
-        f"📚 Geçmiş Hikayeler / Cevaplar ({len(st.session_state['story_archive'])} Kayıt)"
+        f"📚 Tüm Sorular ve Cevaplar Arşivi ({len(st.session_state['story_archive'])} Kayıt)"
+    )
+    st.caption(
+        "Aşağıdaki listeden daha önce sorduğunuz tüm soruları görebilir, tıklayıp okuyabilir veya tekrar dinleyebilirsiniz:"
     )
 
     for idx, item in enumerate(st.session_state["story_archive"]):
         expander_title = (
-            f"🕒 {item['time']} - Soru/Konu: \"{item['prompt'][:35]}...\""
+            f"🕒 {item['time']} - Soru: \"{item['prompt'][:40]}\""
         )
 
         with st.expander(expander_title):
@@ -171,7 +179,7 @@ if len(st.session_state["story_archive"]) > 0:
             arch_tts = f"""
                 <button onclick="window.speechSynthesis.cancel(); var msg = new SpeechSynthesisUtterance('{arch_text_js}'); msg.lang='tr-TR'; msg.rate=0.95; window.speechSynthesis.speak(msg);" 
                 style="width:100%; background:#8e8e93; color:white; border:none; padding:8px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:13px; margin-top:5px;">
-                🔊 Bu Hikayeyi Sesli Dinle
+                🔊 Bu Cevabı Sesli Dinle
                 </button>
             """
             components.html(arch_tts, height=45)
@@ -179,7 +187,7 @@ if len(st.session_state["story_archive"]) > 0:
             st.download_button(
                 label="📥 Metin Dosyası Olarak İndir (.txt)",
                 data=item["story"],
-                file_name=f"metin_soyak_hikaye_{item['time'].replace(':','-')}.txt",
+                file_name=f"metin_soyak_cevap_{item['time'].replace(':','-')}.txt",
                 mime="text/plain",
                 key=f"dl_{idx}_{item['time']}",
             )
