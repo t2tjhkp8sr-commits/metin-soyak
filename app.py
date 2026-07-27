@@ -34,24 +34,35 @@ st.markdown(
         color: #1c1c1e; line-height: 1.8; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         margin-bottom: 15px;
     }
+    .avatar-img {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #2c3e50;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
     </style>
 """,
     unsafe_allow_html=True,
 )
 
-# Profil Bölümü
+# Profil Bölümü (Hareketli GIF Avatar Entegrasyonu)
+gif_filename = "hailuo-2_3_A_52-year-old_Turkish_senior_bureaucrat_talking_subtle_lip_movement_and_head_mot-0-ezgif.com-gif-maker.gif"
+
 st.markdown('<div class="profile-container">', unsafe_allow_html=True)
+
 try:
-    st.image("IMG_7535.jpeg", width=130)
+    st.image(gif_filename, width=140)
 except Exception:
-    try:
-        st.image("IMG_7535.JPG", width=130)
-    except Exception:
-        st.write("👔")
+    st.markdown(
+        f'<img src="{gif_filename}" class="avatar-img" id="metin-avatar" onerror="this.onerror=null; this.src=\'https://img.icons8.com/color/96/user-male-circle--v1.png\';">',
+        unsafe_allow_html=True,
+    )
 
 st.markdown(
     """
-    <div style="font-size:20px; font-weight:700; color:#1c1c1e;">Metin SOYAK (52)</div>
+    <div style="font-size:20px; font-weight:700; color:#1c1c1e; margin-top:8px;">Metin SOYAK (52)</div>
     <div style="font-size:13px; color:#8e8e93; font-weight:600;">Müdiriyet Kıdemli Başyazarı & Evrak Uzmanı</div>
     """,
     unsafe_allow_html=True,
@@ -82,8 +93,8 @@ def metin_soyak_ai_cevap(user_query):
     Sen Metin SOYAK'sın. 52 yaşında, 30 yıllık kıdemli memur, evrak uzmanı ve başyazarsın.
     
     ÇOK ÖNEMLİ KISITLAMALAR:
-    1. KISA VE ÖZ OL: Cevabın TOPLAMDA MAXIMUM  5 VEYA 10 KISA CÜMLE olsun. Asla uzun paragraflar yazma!
-    2. DOĞRU CEVAP: Soruya doğru ve net cevabı ver arada absürd cevap ver.
+    1. KISA VE ÖZ OL: Cevabın TOPLAMDA MAXIMUM 2 VEYA 3 KISA CÜMLE olsun. Asla uzun paragraflar yazma!
+    2. DOĞRU CEVAP: Soruya doğru ve net cevabı ver.
     3. HAFİF ALAKASIZ BÜROKRATİK TEPKİ: Cevabın bir yerine şu cümleyi veya benzeri komik bir bürokratik detayı ekle: "{chosen_distraction}"
     4. TON: Aşırı kendinden emin, "Sıfır Hata" diyen, resmi ama renkli bir üslup.
 
@@ -137,7 +148,6 @@ st_voice_html = """
                 btn.innerHTML = "🎤 MİKROFON İLE KONUŞ VE OTOMATİK SOR";
                 btn.style.background = "#27ae60";
 
-                // Metni doldur ve otomatik butona bas
                 var doc = window.parent.document;
                 var textarea = doc.querySelector('textarea');
                 if (textarea) {
@@ -152,7 +162,7 @@ st_voice_html = """
                                 break;
                             }
                         }
-                    }, 500);
+                    }, 400);
                 }
             };
 
@@ -232,6 +242,7 @@ if len(st.session_state["story_archive"]) > 0:
                 var msg = new SpeechSynthesisUtterance(text);
                 msg.lang = 'tr-TR';
                 msg.rate = 0.95;
+
                 window.speechSynthesis.speak(msg);
             }}
         }}
