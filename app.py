@@ -6,7 +6,7 @@ from google import genai
 import streamlit as st
 import streamlit.components.v1 as components
 
-# Sayfa Ayarları
+# 1. Sayfa Ayarları
 st.set_page_config(
     page_title="Metin Soyak - Yapay Zeka Yanıt Merkezi",
     page_icon="👔",
@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Ses Kaydedici Modülü Korumalı İçe Aktarma
+# Ses Kaydedici Modülü
 try:
     from streamlit_mic_recorder import speech_to_text
 
@@ -27,13 +27,15 @@ if "story_archive" not in st.session_state:
     st.session_state["story_archive"] = []
 if "is_speaking" not in st.session_state:
     st.session_state["is_speaking"] = False
+if "auto_play_trigger" not in st.session_state:
+    st.session_state["auto_play_trigger"] = False
 
 # Dosya Yolları
 STATIC_IMG = "IMG_7535.jpeg"
 TALKING_GIF = "hailuo-2_3_A_52-year-old_Turkish_senior_bureaucrat_talking_subtle_lip_movement_and_head_mot-0-ezgif.com-gif-maker.gif"
 
 
-# Base64 Görsel Yükleyici (Kırık Resim/GIF Engelleme)
+# Base64 Görsel Yükleyici
 def load_image_as_b64(file_path):
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
@@ -62,9 +64,9 @@ st.markdown(
         margin-bottom: 15px; font-weight: 500;
     }
     .avatar-frame {
-        width: 140px; height: 140px; border-radius: 50%;
+        width: 150px; height: 150px; border-radius: 50%;
         object-fit: cover; border: 3px solid #2c3e50;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.18);
     }
     </style>
 """,
@@ -124,7 +126,7 @@ def metin_soyak_ai_cevap(user_query):
 # AVATAR VE PROFİL BÖLÜMÜ
 st.markdown('<div class="profile-container">', unsafe_allow_html=True)
 
-# Konuşma durumuna göre GIF veya Durağan Resim Basımı
+# Cevap verilip seslendirme aşamasındaysa OTOMATİK GIF göster
 if st.session_state["is_speaking"] and gif_b64:
     img_src = f"data:image/gif;base64,{gif_b64}"
 elif static_b64:
@@ -154,12 +156,11 @@ st.caption(
 st.markdown("</div>", unsafe_allow_html=True)
 
 
-# SORU ALMA BÖLÜMÜ (YAZILI VEYA GERÇEK MİKROFON)
+# SORU ALMA BÖLÜMÜ
 st.subheader("🎙️ Sorunuzu İletin")
 
 voice_text = ""
 if MIC_AVAILABLE:
-    # Mobil ve Safari Uyumlu Doğrudan Mikrofon Kaydedici
     voice_text = speech_to_text(
         language="tr",
         start_prompt="🎤 Mikrofona Basıp Konuşun",
@@ -175,15 +176,10 @@ user_prompt = st.text_area(
     height=80,
 )
 
-# SORUYU İŞLEME BUTONU VEYA OTOMATİK SES TETİKLEME
 final_query = voice_text if voice_text else user_prompt.strip()
 
-if st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True) or (
-    voice_text and "last_voice" not in st.session_state
-):
-    if voice_text:
-        st.session_state["last_voice"] = voice_text
-
+# SORU CEVAPLAMA TETİKLEYİCİSİ
+if st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True):
     if not final_query:
         st.warning("⚠️ Lütfen Metin Bey'e bir soru iletin!")
     else:
@@ -199,12 +195,13 @@ if st.button("✍️ METİN SOYAK'A SOR VE CEVAP AL", use_container_width=True) 
                     "answer": answer_result,
                 },
             )
-            # Cevap geldiğinde avatarı konuşma (GIF) moduna geçir
+            # Konuşma modunu ve OTOMATİK SES OYNATMA'yı aktif et
             st.session_state["is_speaking"] = True
+            st.session_state["auto_play_trigger"] = True
             st.rerun()
 
 
-# CEVAP VE KONUŞAN AVATAR SESLENDİRME BÖLÜMÜ
+# OTOMATİK KONUŞMA VE CEVAP BÖLÜMÜ
 if len(st.session_state["story_archive"]) > 0:
     latest = st.session_state["story_archive"][0]
 
@@ -221,33 +218,56 @@ if len(st.session_state["story_archive"]) > 0:
         .replace("\n", " ")
     )
 
-    # Sesli Okuma Butonu
-    sync_tts_script = f"""
-        <script>
-        function speakMetin() {{
-            if ('speechSynthesis' in window) {{
-                window.speechSynthesis.cancel();
-                var text = "{clean_text}";
-                var msg = new SpeechSynthesisUtterance(text);
-                msg.lang = 'tr-TR';
-                msg.rate = 0.92;
-                window.speechSynthesis.speak(msg);
-            }}
-        }}
-        </script>
-        <button onclick="speakMetin()" 
-        style="width:100%; background:#2c3e50; color:white; border:none; padding:14px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:16px;">
-        🗣️ METİN BEY'İ CANLI DİNLE (AVATAR KONUŞUYOR)
-        </button>
-    """
-    components.html(sync_tts_script, height=65)
+    # Otomatik Seslendirme Scripti (Ekstra Buton Yok!)
+    if st.session_state["auto_play_trigger"]:
+        autoplay_script = f"""
+            <script>
+            function autoSpeak() {{
+                if ('speechSynthesis' in window) {{
+                    window.speechSynthesis.cancel();
+                    var text = "{clean_text}";
+                    var msg = new SpeechSynthesisUtterance(text);
+                    msg.lang = 'tr-TR';
+                    msg.rate = 0.92;
+                    
+                    // Ses bittiğinde avatarı otomatik durağan fotoğrafa döndürmek için
+                    msg.onend = function() {{
+                        console.log("Ses bitti");
+                    }};
 
-    # Konuşma bittiğinde durağan fotoğrafa dönme butonu
-    if st.session_state["is_speaking"]:
-        if st.button(
-            "⏹️ Konuşmayı Bitir (Durağan Fotoğrafa Dön)",
-            use_container_width=True,
-        ):
+                    window.speechSynthesis.speak(msg);
+                }}
+            }}
+            // Sayfa yüklendiği an otomatik çalışır
+            setTimeout(autoSpeak, 200);
+            </script>
+        """
+        components.html(autoplay_script, height=0)
+        st.session_state["auto_play_trigger"] = False  # Tekrarlamayı önle
+
+    # Manuel Tekrar Dinleme ve Durdurma Seçenekleri
+    col1, col2 = st.columns(2)
+    with col1:
+        repeat_script = f"""
+            <script>
+            function speakAgain() {{
+                if ('speechSynthesis' in window) {{
+                    window.speechSynthesis.cancel();
+                    var msg = new SpeechSynthesisUtterance("{clean_text}");
+                    msg.lang = 'tr-TR';
+                    msg.rate = 0.92;
+                    window.speechSynthesis.speak(msg);
+                }}
+            }}
+            </script>
+            <button onclick="speakAgain()" style="width:100%; background:#2c3e50; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">
+            🔄 Tekrar Dinle
+            </button>
+        """
+        components.html(repeat_script, height=45)
+
+    with col2:
+        if st.button("⏹️ Avatarı Durdur", use_container_width=True):
             st.session_state["is_speaking"] = False
             st.rerun()
 
