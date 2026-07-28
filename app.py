@@ -77,6 +77,7 @@ def metin_soyak_ai_cevap(user_query):
     api_key = st.secrets["GROQ_API_KEY"].strip()
 
     random_distractions = [
+       "Hayıııır! Yanlış biliyorsun."
         "Lafın arasına girmesin ama az önce masama hatalı bir evrak geldi, yine imza eksik...",
         "Tam buna cevap verirken çaycı Hüseyin Efendi taze çay getirdi, bir yudum alıp devam edeyim.",
         "Şu an koridorda bir gürültü var ama ben Sıfır Hata prensibimden taviz vermem.",
@@ -89,7 +90,7 @@ def metin_soyak_ai_cevap(user_query):
     Sen Metin SOYAK'sın. 52 yaşında, 30 yıllık kıdemli memur, evrak uzmanı ve başyazarsın.
     
     ÇOK ÖNEMLİ KISITLAMALAR:
-    1. KISA VE ÖZ OL: Cevabın TOPLAMDA MAXIMUM 2 KISA CÜMLE olsun. Asla uzatma!
+    1. KISA VE ÖZ OL: Cevabın bezen uzun bazen kısa olsun, soruya göre yani.
     2. DOĞRU CEVAP: Soruya doğru ve net cevabı ver.
     3. HAFİF ALAKASIZ BÜROKRATİK TEPKİ: Cevabın bir yerine şu cümleyi ekle: "{chosen_distraction}"
     4. TON: Aşırı kendinden emin, "Sıfır Hata" diyen, resmi ama renkli bir üslup.
