@@ -4,8 +4,7 @@ import os
 import random
 from datetime import datetime
 import edge_tts
-from google import genai
-from google.genai import types
+from groq import Groq
 import streamlit as st
 
 # 1. Sayfa Ayarları
@@ -70,12 +69,12 @@ def text_to_audio_b64(text):
         return None
 
 
-# 2. Bağlantı Korumalı Yapay Zeka Motoru
+# 2. Ücretsiz ve Işık Hızında Groq Motoru
 def metin_soyak_ai_cevap(user_query):
-    if "GEMINI_API_KEY" not in st.secrets or not st.secrets["GEMINI_API_KEY"]:
-        return "HATA: Secrets alanında 'GEMINI_API_KEY' bulunamadı!"
+    if "GROQ_API_KEY" not in st.secrets or not st.secrets["GROQ_API_KEY"]:
+        return "HATA: Secrets alanında 'GROQ_API_KEY' bulunamadı!"
 
-    api_key = st.secrets["GEMINI_API_KEY"].strip()
+    api_key = st.secrets["GROQ_API_KEY"].strip()
 
     random_distractions = [
         "Lafın arasına girmesin ama az önce masama hatalı bir evrak geldi, yine imza eksik...",
@@ -94,36 +93,26 @@ def metin_soyak_ai_cevap(user_query):
     2. DOĞRU CEVAP: Soruya doğru ve net cevabı ver.
     3. HAFİF ALAKASIZ BÜROKRATİK TEPKİ: Cevabın bir yerine şu cümleyi ekle: "{chosen_distraction}"
     4. TON: Aşırı kendinden emin, "Sıfır Hata" diyen, resmi ama renkli bir üslup.
-
-    Kullanıcının Sorduğu Soru: "{user_query}"
     """
 
-    # Yüksek erişilebilirlikli model listesi
-    target_models = ["gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-pro"]
-
     try:
-        client = genai.Client(api_key=api_key)
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_query},
+            ],
+            max_tokens=150,
+            temperature=0.7,
+        )
+        if response and response.choices:
+            return response.choices[0].message.content
 
-        for model in target_models:
-            try:
-                response = client.models.generate_content(
-                    model=model,
-                    contents=system_prompt,
-                    config=types.GenerateContentConfig(
-                        max_output_tokens=150,
-                        temperature=0.7,
-                    ),
-                )
-                if response and response.text:
-                    return response.text
-            except Exception as inner_e:
-                # Bir model hata verirse sıradakine geç
-                continue
+        return "Yanıt üretilemedi. Lütfen tekrar deneyin."
 
     except Exception as e:
-        return f"Bağlantı Hatası: {str(e)}"
-
-    return "Şu an Google API kotaları geçici olarak dolmuş durumda. Lütfen 1-2 dakika bekleyip tekrar deneyiniz."
+        return f"HATA: {str(e)}"
 
 
 # --- TAM EKRAN AVATAR MODU ---
