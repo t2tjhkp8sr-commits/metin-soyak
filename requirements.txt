@@ -3,3 +3,4 @@ google-genai
 streamlit-mic-recorder
 edge-tts
 asyncio
+groq
