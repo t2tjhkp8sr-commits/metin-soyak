@@ -51,7 +51,6 @@ gif_b64 = get_image_b64(TALKING_GIF)
 # Tok Erkek Sesi ve Hızlandırılmış Üretim
 async def generate_male_audio(text):
     voice = "tr-TR-AhmetNeural"
-    # rate="+15%" parametresi ses dosyasının üretimini ve okunuşunu hızlandırır
     communicate = edge_tts.Communicate(text, voice, rate="+15%")
     output_path = "temp_response.mp3"
     await communicate.save(output_path)
@@ -71,7 +70,7 @@ def text_to_audio_b64(text):
         return None
 
 
-# 2. Hızlandırılmış Yapay Zeka Motoru
+# 2. Kota Korumalı Yapay Zeka Motoru
 def metin_soyak_ai_cevap(user_query):
     if "GEMINI_API_KEY" not in st.secrets or not st.secrets["GEMINI_API_KEY"]:
         return "HATA: Secrets alanında 'GEMINI_API_KEY' bulunamadı!"
@@ -99,25 +98,31 @@ def metin_soyak_ai_cevap(user_query):
     Kullanıcının Sorduğu Soru: "{user_query}"
     """
 
-    try:
-        client = genai.Client(api_key=api_key)
-        
-        # Doğrudan en hızlı Flash modelini hedefliyoruz (Döngü yok)
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=system_prompt,
-            config=types.GenerateContentConfig(
-                max_output_tokens=150,
-                temperature=0.7,
-            ),
-        )
-        if response and response.text:
-            return response.text
+    # Kota dolarsa denenecek alternatif modeller sırası
+    target_models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
 
-        return "Yanıt üretilemedi. Lütfen tekrar deneyin."
+    client = genai.Client(api_key=api_key)
 
-    except Exception as e:
-        return f"HATA: {str(e)}"
+    for model in target_models:
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=system_prompt,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=150,
+                    temperature=0.7,
+                ),
+            )
+            if response and response.text:
+                return response.text
+        except Exception as e:
+            # Kota aşımı (429) veya başka bir hatada sonraki modele geç
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                continue
+            else:
+                continue
+
+    return "Şu an tüm yapay zeka hatları yoğun. Lütfen 1-2 dakika sonra tekrar deneyin."
 
 
 # --- TAM EKRAN AVATAR MODU ---
@@ -292,7 +297,7 @@ else:
     # Cevap Hazır Olduğunda Çıkan Buton
     if len(st.session_state["story_archive"]) > 0:
         st.success("✅ Metin Bey cevabı hazırladı!")
-        
+
         if st.button("👁️ Cevabı Gör", use_container_width=True, type="primary"):
             st.session_state["is_speaking"] = True
             st.rerun()
