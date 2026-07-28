@@ -70,7 +70,7 @@ def text_to_audio_b64(text):
         return None
 
 
-# 2. Kota Korumalı Yapay Zeka Motoru
+# 2. Bağlantı Korumalı Yapay Zeka Motoru
 def metin_soyak_ai_cevap(user_query):
     if "GEMINI_API_KEY" not in st.secrets or not st.secrets["GEMINI_API_KEY"]:
         return "HATA: Secrets alanında 'GEMINI_API_KEY' bulunamadı!"
@@ -98,31 +98,32 @@ def metin_soyak_ai_cevap(user_query):
     Kullanıcının Sorduğu Soru: "{user_query}"
     """
 
-    # Kota dolarsa denenecek alternatif modeller sırası
-    target_models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+    # Yüksek erişilebilirlikli model listesi
+    target_models = ["gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-pro"]
 
-    client = genai.Client(api_key=api_key)
+    try:
+        client = genai.Client(api_key=api_key)
 
-    for model in target_models:
-        try:
-            response = client.models.generate_content(
-                model=model,
-                contents=system_prompt,
-                config=types.GenerateContentConfig(
-                    max_output_tokens=150,
-                    temperature=0.7,
-                ),
-            )
-            if response and response.text:
-                return response.text
-        except Exception as e:
-            # Kota aşımı (429) veya başka bir hatada sonraki modele geç
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                continue
-            else:
+        for model in target_models:
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=system_prompt,
+                    config=types.GenerateContentConfig(
+                        max_output_tokens=150,
+                        temperature=0.7,
+                    ),
+                )
+                if response and response.text:
+                    return response.text
+            except Exception as inner_e:
+                # Bir model hata verirse sıradakine geç
                 continue
 
-    return "Şu an tüm yapay zeka hatları yoğun. Lütfen 1-2 dakika sonra tekrar deneyin."
+    except Exception as e:
+        return f"Bağlantı Hatası: {str(e)}"
+
+    return "Şu an Google API kotaları geçici olarak dolmuş durumda. Lütfen 1-2 dakika bekleyip tekrar deneyiniz."
 
 
 # --- TAM EKRAN AVATAR MODU ---
