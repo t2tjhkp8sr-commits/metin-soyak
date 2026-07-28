@@ -5,6 +5,7 @@ import random
 from datetime import datetime
 import edge_tts
 from google import genai
+from google.genai import types
 import streamlit as st
 
 # 1. Sayfa Ayarları
@@ -47,10 +48,11 @@ static_b64 = get_image_b64(STATIC_IMG)
 gif_b64 = get_image_b64(TALKING_GIF)
 
 
-# Tok Erkek Sesi (tr-TR-AhmetNeural) Oluşturma Fonksiyonu
+# Tok Erkek Sesi ve Hızlandırılmış Üretim
 async def generate_male_audio(text):
     voice = "tr-TR-AhmetNeural"
-    communicate = edge_tts.Communicate(text, voice)
+    # rate="+15%" parametresi ses dosyasının üretimini ve okunuşunu hızlandırır
+    communicate = edge_tts.Communicate(text, voice, rate="+15%")
     output_path = "temp_response.mp3"
     await communicate.save(output_path)
 
@@ -69,7 +71,7 @@ def text_to_audio_b64(text):
         return None
 
 
-# 2. Yapay Zeka Motoru
+# 2. Hızlandırılmış Yapay Zeka Motoru
 def metin_soyak_ai_cevap(user_query):
     if "GEMINI_API_KEY" not in st.secrets or not st.secrets["GEMINI_API_KEY"]:
         return "HATA: Secrets alanında 'GEMINI_API_KEY' bulunamadı!"
@@ -89,7 +91,7 @@ def metin_soyak_ai_cevap(user_query):
     Sen Metin SOYAK'sın. 52 yaşında, 30 yıllık kıdemli memur, evrak uzmanı ve başyazarsın.
     
     ÇOK ÖNEMLİ KISITLAMALAR:
-    1. KISA VE ÖZ OL: Cevabın TOPLAMDA MAXIMUM 2 VEYA 3 KISA CÜMLE olsun. Asla uzun paragraflar yazma!
+    1. KISA VE ÖZ OL: Cevabın TOPLAMDA MAXIMUM 2 KISA CÜMLE olsun. Asla uzatma!
     2. DOĞRU CEVAP: Soruya doğru ve net cevabı ver.
     3. HAFİF ALAKASIZ BÜROKRATİK TEPKİ: Cevabın bir yerine şu cümleyi ekle: "{chosen_distraction}"
     4. TON: Aşırı kendinden emin, "Sıfır Hata" diyen, resmi ama renkli bir üslup.
@@ -99,18 +101,18 @@ def metin_soyak_ai_cevap(user_query):
 
     try:
         client = genai.Client(api_key=api_key)
-        available_models = [m.name for m in client.models.list()]
-
-        for model_info in available_models:
-            model_name = model_info.replace("models/", "")
-            try:
-                response = client.models.generate_content(
-                    model=model_name, contents=system_prompt
-                )
-                if response and response.text:
-                    return response.text
-            except Exception:
-                continue
+        
+        # Doğrudan en hızlı Flash modelini hedefliyoruz (Döngü yok)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=system_prompt,
+            config=types.GenerateContentConfig(
+                max_output_tokens=150,
+                temperature=0.7,
+            ),
+        )
+        if response and response.text:
+            return response.text
 
         return "Yanıt üretilemedi. Lütfen tekrar deneyin."
 
@@ -171,7 +173,7 @@ if st.session_state["is_speaking"] and len(st.session_state["story_archive"]) > 
         unsafe_allow_html=True,
     )
 
-    # Doğrudan HTML5 Autoplay Ses Öğesi
+    # Otomatik Ses Çalar
     audio_b64 = latest.get("audio_b64")
     if audio_b64:
         st.markdown(
@@ -291,7 +293,7 @@ else:
     if len(st.session_state["story_archive"]) > 0:
         st.success("✅ Metin Bey cevabı hazırladı!")
         
-        if st.button("🔊 Cevabı Gör", use_container_width=True, type="primary"):
+        if st.button("👁️ Cevabı Gör", use_container_width=True, type="primary"):
             st.session_state["is_speaking"] = True
             st.rerun()
 
